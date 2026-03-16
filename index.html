@@ -255,6 +255,41 @@
     border-bottom: none;
   }
 
+  .user-bar select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    outline: none;
+  }
+
+  .user-bar select:focus { border-color: var(--accent); }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .admin-table th, .admin-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: left;
+    font-size: 0.85rem;
+  }
+
+  .admin-table th {
+    background: var(--card);
+    color: var(--accent);
+  }
+
+  .admin-table tr:nth-child(even) {
+    background: rgba(255,255,255,0.03);
+  }
+
   @media (max-width: 768px) {
     body { padding: 10px; }
     th, td { padding: 6px 8px; }
@@ -269,15 +304,45 @@
 
 <div id="error-bar"></div>
 
-<div class="user-bar" id="name-bar">
-  <label for="voter-name">Your name:</label>
-  <input type="text" id="voter-name" placeholder="e.g. Uthvag" />
-  <button onclick="saveName()">Start voting</button>
+<div class="user-bar" id="name-bar" style="flex-direction:column;gap:10px;align-items:stretch;max-width:500px;margin:0 auto 20px">
+  <div style="display:flex;gap:10px;align-items:center;justify-content:center">
+    <label for="voter-name">Your name:</label>
+    <input type="text" id="voter-name" placeholder="e.g. Uthvag" />
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;justify-content:center">
+    <label for="is-pvx">PVX member?</label>
+    <select id="is-pvx">
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;justify-content:center">
+    <label for="num-partners">Partners/kids:</label>
+    <select id="num-partners">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+    <label for="num-others">Others:</label>
+    <select id="num-others">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+  </div>
+  <button onclick="saveName()" style="align-self:center">Start voting</button>
 </div>
 
 <div class="user-bar" id="user-bar" style="display:none">
-  Voting as: <strong id="current-user"></strong>
+  Voting as: <strong id="current-user"></strong> &mdash; <span id="current-info"></span>
   <button onclick="changeName()" style="background:var(--border);font-size:0.8rem;padding:4px 10px">Change</button>
+  <button onclick="toggleAdmin()" style="background:var(--card);font-size:0.8rem;padding:4px 10px">Show all votes</button>
 </div>
 
 <div class="legend">
@@ -293,6 +358,11 @@
   <div id="summary-list"></div>
 </div>
 
+<div class="summary" id="admin-panel" style="display:none">
+  <h3>All Votes</h3>
+  <div id="admin-table"></div>
+</div>
+
 <script>
 // ─── Configuration ─────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://opadleobyehxumakwjvh.supabase.co";
@@ -306,7 +376,14 @@ const HEADERS = {
 };
 
 let voterName = localStorage.getItem('kinepolis_voter') || '';
+let isPVX = localStorage.getItem('kinepolis_pvx') || 'Yes';
+let numPartners = parseInt(localStorage.getItem('kinepolis_partners') || '0', 10);
+let numOthers = parseInt(localStorage.getItem('kinepolis_others') || '0', 10);
 let allVotes = [];
+
+function getTotalPeople(v) {
+  return 1 + (v.Partners || 0) + (v.Others || 0);
+}
 
 // ─── Name handling ─────────────────────────────────────────────────────────
 
@@ -315,10 +392,19 @@ function saveName() {
   const name = input.value.trim();
   if (!name) { input.focus(); return; }
   voterName = name;
+  isPVX = document.getElementById('is-pvx').value;
+  numPartners = parseInt(document.getElementById('num-partners').value, 10);
+  numOthers = parseInt(document.getElementById('num-others').value, 10);
   localStorage.setItem('kinepolis_voter', name);
+  localStorage.setItem('kinepolis_pvx', isPVX);
+  localStorage.setItem('kinepolis_partners', numPartners);
+  localStorage.setItem('kinepolis_others', numOthers);
   document.getElementById('name-bar').style.display = 'none';
   document.getElementById('user-bar').style.display = 'flex';
   document.getElementById('current-user').textContent = name;
+  const total = 1 + numPartners + numOthers;
+  document.getElementById('current-info').textContent =
+    (isPVX === 'Yes' ? 'PVX' : 'non-PVX') + ', ' + total + ' total';
   renderTable();
 }
 
@@ -326,14 +412,27 @@ function changeName() {
   document.getElementById('name-bar').style.display = 'flex';
   document.getElementById('user-bar').style.display = 'none';
   document.getElementById('voter-name').value = voterName;
+  document.getElementById('is-pvx').value = isPVX;
+  document.getElementById('num-partners').value = numPartners;
+  document.getElementById('num-others').value = numOthers;
   document.getElementById('voter-name').focus();
+}
+
+function toggleAdmin() {
+  const panel = document.getElementById('admin-panel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    renderAdmin();
+  } else {
+    panel.style.display = 'none';
+  }
 }
 
 // ─── Supabase API helpers ──────────────────────────────────────────────────
 
 async function fetchAllVotes() {
   const resp = await fetch(
-    SUPABASE_URL + '/rest/v1/votes?select=id,MovieTitle,ShowDate,ShowTime,VoterName&limit=5000',
+    SUPABASE_URL + '/rest/v1/votes?select=id,MovieTitle,ShowDate,ShowTime,VoterName,IsPVX,Partners,Others&limit=5000',
     { headers: HEADERS }
   );
   if (!resp.ok) throw new Error('Failed to fetch votes: ' + resp.status);
@@ -351,6 +450,9 @@ async function addVote(movie, date, time) {
         ShowDate: date,
         ShowTime: time,
         VoterName: voterName,
+        IsPVX: isPVX,
+        Partners: numPartners,
+        Others: numOthers,
       }),
     }
   );
@@ -413,14 +515,18 @@ function renderTable() {
         const voters = getVotersForSlot(movie.title, date, t);
         const myVote = getMyVoteForSlot(movie.title, date, t);
         const votedClass = myVote ? ' voted' : '';
+        const totalPeople = voters.reduce((sum, v) => sum + getTotalPeople(v), 0);
         const countBadge = voters.length > 0
-          ? '<span class="vote-count">' + voters.length + '</span>'
+          ? '<span class="vote-count">' + totalPeople + '&#128100;</span>'
           : '';
 
         let tooltip = '';
         if (voters.length > 0) {
-          const names = voters.map(v => v.VoterName).join(', ');
-          tooltip = '<span class="voters-tooltip">' + escHtml(names) + '</span>';
+          const names = voters.map(v => {
+            const extra = (v.Partners || 0) + (v.Others || 0);
+            return v.VoterName + (v.IsPVX === 'Yes' ? '*' : '') + (extra > 0 ? ' (+' + extra + ')' : '');
+          }).join(', ');
+          tooltip = '<span class="voters-tooltip">' + escHtml(names) + ' (* = PVX)</span>';
         }
 
         html += '<button class="time-btn' + votedClass + '" '
@@ -443,12 +549,16 @@ function renderTable() {
 
 function renderSummary() {
   const tally = {};
+  const peopleTally = {};
+  const pvxTally = {};
   for (const v of allVotes) {
     const key = v.MovieTitle + ' — ' + v.ShowDate + ' ' + v.ShowTime;
     tally[key] = (tally[key] || 0) + 1;
+    peopleTally[key] = (peopleTally[key] || 0) + getTotalPeople(v);
+    if (v.IsPVX === 'Yes') pvxTally[key] = (pvxTally[key] || 0) + 1;
   }
 
-  const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+  const sorted = Object.entries(peopleTally).sort((a, b) => b[1] - a[1]);
   if (sorted.length === 0) {
     document.getElementById('summary').style.display = 'none';
     return;
@@ -456,11 +566,36 @@ function renderSummary() {
 
   document.getElementById('summary').style.display = 'block';
   let html = '';
-  for (const [label, count] of sorted.slice(0, 10)) {
+  for (const [label, people] of sorted.slice(0, 10)) {
+    const votes = tally[label];
+    const pvx = pvxTally[label] || 0;
     html += '<div class="summary-item"><span>' + escHtml(label) + '</span><span><strong>'
-          + count + '</strong> vote' + (count !== 1 ? 's' : '') + '</span></div>';
+          + people + '</strong> people, ' + pvx + ' PVX (' + votes + ' vote' + (votes !== 1 ? 's' : '') + ')</span></div>';
   }
   document.getElementById('summary-list').innerHTML = html;
+}
+
+function renderAdmin() {
+  let html = '<table class="admin-table"><thead><tr>'
+    + '<th>Name</th><th>PVX?</th><th>Partners/kids</th><th>Others</th><th>Total</th><th>Movie</th><th>Date</th><th>Time</th>'
+    + '</tr></thead><tbody>';
+
+  const sorted = [...allVotes].sort((a, b) => a.VoterName.localeCompare(b.VoterName));
+  for (const v of sorted) {
+    html += '<tr>'
+      + '<td>' + escHtml(v.VoterName) + '</td>'
+      + '<td>' + (v.IsPVX || '?') + '</td>'
+      + '<td>' + (v.Partners || 0) + '</td>'
+      + '<td>' + (v.Others || 0) + '</td>'
+      + '<td>' + getTotalPeople(v) + '</td>'
+      + '<td>' + escHtml(v.MovieTitle) + '</td>'
+      + '<td>' + escHtml(v.ShowDate) + '</td>'
+      + '<td>' + escHtml(v.ShowTime) + '</td>'
+      + '</tr>';
+  }
+
+  html += '</tbody></table>';
+  document.getElementById('admin-table').innerHTML = html;
 }
 
 function escHtml(s) {
@@ -499,6 +634,9 @@ async function toggleVote(btn) {
         ShowDate: date,
         ShowTime: time,
         VoterName: voterName,
+        IsPVX: isPVX,
+        Partners: numPartners,
+        Others: numOthers,
       });
     }
     renderTable();
@@ -520,11 +658,14 @@ function showError(msg) {
 // ─── Init ──────────────────────────────────────────────────────────────────
 
 async function init() {
-  // Restore saved name
+  // Restore saved name & party size
   if (voterName) {
     document.getElementById('name-bar').style.display = 'none';
     document.getElementById('user-bar').style.display = 'flex';
     document.getElementById('current-user').textContent = voterName;
+    const total = 1 + numPartners + numOthers;
+    document.getElementById('current-info').textContent =
+      (isPVX === 'Yes' ? 'PVX' : 'non-PVX') + ', ' + total + ' total';
   }
 
   try {
@@ -534,7 +675,7 @@ async function init() {
     renderTable();
   } catch (err) {
     document.getElementById('loading').textContent =
-      'Failed to load votes. Check that the Power Automate flows are active.';
+      'Failed to load votes. Check that Supabase is configured correctly.';
     showError(err.message);
     console.error(err);
   }
