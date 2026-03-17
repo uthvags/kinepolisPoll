@@ -145,57 +145,35 @@ def scrape_kinepolis(
     ):
         film_genres[m.group(2)] = re.findall(r'"name":"([^"]+)"', m.group(1))
 
-    # Try to extract ratings from the film JSON blocks
-    # Dump a sample film block for debugging field names
-    sample_block = None
-    for m in re.finditer(r'"documentType":"film","id":"(HO\d+)"', page_source):
-        block_start = max(0, m.start() - 2000)
-        block_end = min(len(page_source), m.end() + 500)
-        block = page_source[block_start:block_end]
-        fid = m.group(1)
-        if sample_block is None:
-            sample_block = block
-        # Try common rating field names near the film id
-        for pattern in [
-            r'"imdbRating":"([^"]+)"',
-            r'"rating":"([^"]+)"',
-            r'"score":"([^"]+)"',
-            r'"imdbScore":"([^"]+)"',
-            r'"ratingValue":"([^"]+)"',
-        ]:
-            rm = re.search(pattern, block)
-            if rm and fid not in film_ratings:
-                try:
-                    val = float(rm.group(1))
-                    film_ratings[fid] = str(val)
-                except ValueError:
-                    film_ratings[fid] = rm.group(1)
-                break
-
-    if sample_block:
-        # Dump one sample film block to help identify field names
-        with open("kinepolis_film_sample.txt", "w", encoding="utf-8") as f:
-            f.write(sample_block)
-        print(f"  Dumped sample film block to kinepolis_film_sample.txt")
-        print(f"  Found Kinepolis ratings for {len(film_ratings)} films")
-
-    # Build poster lookup from Kinepolis page (poster/still images)
+    # Extract imdbCode and poster images from film blocks
+    # The Kinepolis Drupal JSON has per-film blocks with:
+    #   "imdbCode":"tt12345678"
+    #   "images":[...{"mediaType":"Poster Graphic","url":"/NL/...jpg"}...]
+    #   ...
+    #   "documentType":"film","id":"HO00006155"
+    film_imdb_codes = {}
     film_posters = {}
-    for m in re.finditer(
-        r'"posterImageUrl":"([^"]+)"[^}]*?"documentType":"film","id":"(HO\d+)"',
-        page_source,
-    ):
-        url = m.group(1).replace("\\/", "/")
-        film_posters[m.group(2)] = url
-    # Fallback: try "imageUrl" field
-    if not film_posters:
-        for m in re.finditer(
-            r'"imageUrl":"([^"]+)"[^}]*?"documentType":"film","id":"(HO\d+)"',
-            page_source,
-        ):
-            url = m.group(1).replace("\\/", "/")
-            if m.group(2) not in film_posters:
-                film_posters[m.group(2)] = url
+    for m in re.finditer(r'"documentType":"film","id":"(HO\d+)"', page_source):
+        fid = m.group(1)
+        # Look backwards from the film ID to find its block data
+        block_start = max(0, m.start() - 6000)
+        block = page_source[block_start:m.end()]
+
+        # IMDB code
+        imdb_match = re.search(r'"imdbCode":"(tt\d+)"', block)
+        if imdb_match:
+            film_imdb_codes[fid] = imdb_match.group(1)
+
+        # Poster Graphic image (best quality poster from Kinepolis)
+        poster_match = re.search(
+            r'"mediaType":"Poster Graphic","url":"([^"]+)"', block
+        )
+        if poster_match:
+            url = poster_match.group(1).replace("\\/", "/")
+            film_posters[fid] = "https://kinepolis.nl" + url
+
+    print(f"  Found Kinepolis IMDB codes for {len(film_imdb_codes)} films")
+    print(f"  Found Kinepolis posters for {len(film_posters)} films")
 
     # Extract sessions for our complex
     movies: dict[str, dict] = {}
@@ -243,11 +221,12 @@ def scrape_kinepolis(
         time_label = st_naive.strftime("%H:%M")
 
         if title not in movies:
+            imdb_code = film_imdb_codes.get(fid, "")
             movies[title] = {
                 "times_by_date": defaultdict(list),
                 "genres": genres,
                 "poster": film_posters.get(fid, ""),
-                "kinepolis_rating": film_ratings.get(fid, ""),
+                "imdb_url": f"https://www.imdb.com/title/{imdb_code}/" if imdb_code else "",
             }
         movies[title]["times_by_date"][date_label].append(time_label)
         session_count += 1
@@ -299,17 +278,17 @@ def enrich_movies(movies: dict[str, dict]) -> None:
         if info and info["imdb_rating"] != "N/A":
             data["imdb_rating"] = info["imdb_rating"]
             data["display_genre"] = info["genre"]
-            data["imdb_url"] = info.get("imdb_url", "")
-            # OMDB poster takes priority, fall back to Kinepolis poster
+            # OMDB data overrides Kinepolis when available
+            omdb_url = info.get("imdb_url", "")
+            if omdb_url:
+                data["imdb_url"] = omdb_url
             omdb_poster = info.get("poster", "")
             if omdb_poster:
                 data["poster"] = omdb_poster
         else:
-            # Use Kinepolis rating as fallback
-            kr = data.get("kinepolis_rating", "")
-            data["imdb_rating"] = kr if kr else "?"
+            data["imdb_rating"] = "?"
             data["display_genre"] = ", ".join(data.get("genres", [])) or "?"
-            data.setdefault("imdb_url", "")
+            # poster and imdb_url already set from Kinepolis data in scraper
 
 
 # ─── 3. Build matrix data structure ─────────────────────────────────────────────
