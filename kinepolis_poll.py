@@ -285,7 +285,9 @@ def fetch_imdb_info(title: str) -> dict | None:
             poster = data.get("Poster", "N/A")
             if poster == "N/A":
                 poster = ""
-            return {"imdb_rating": data.get("imdbRating", "N/A"), "genre": data.get("Genre", "N/A"), "poster": poster}
+            imdb_id = data.get("imdbID", "")
+            imdb_url = f"https://www.imdb.com/title/{imdb_id}/" if imdb_id else ""
+            return {"imdb_rating": data.get("imdbRating", "N/A"), "genre": data.get("Genre", "N/A"), "poster": poster, "imdb_url": imdb_url}
     except Exception:
         pass
     return None
@@ -297,6 +299,7 @@ def enrich_movies(movies: dict[str, dict]) -> None:
         if info and info["imdb_rating"] != "N/A":
             data["imdb_rating"] = info["imdb_rating"]
             data["display_genre"] = info["genre"]
+            data["imdb_url"] = info.get("imdb_url", "")
             # OMDB poster takes priority, fall back to Kinepolis poster
             omdb_poster = info.get("poster", "")
             if omdb_poster:
@@ -306,6 +309,7 @@ def enrich_movies(movies: dict[str, dict]) -> None:
             kr = data.get("kinepolis_rating", "")
             data["imdb_rating"] = kr if kr else "?"
             data["display_genre"] = ", ".join(data.get("genres", [])) or "?"
+            data.setdefault("imdb_url", "")
 
 
 # ─── 3. Build matrix data structure ─────────────────────────────────────────────
@@ -351,6 +355,7 @@ def build_matrix_data(movies: dict[str, dict]) -> tuple[list[str], list[dict]]:
             "imdb": data.get("imdb_rating", "?"),
             "genre": data.get("display_genre", "?"),
             "poster": data.get("poster", ""),
+            "imdb_url": data.get("imdb_url", ""),
             "cells": {},
         }
         for date in sorted_dates:
@@ -530,6 +535,16 @@ def generate_html(
     object-fit: cover;
     border-radius: 4px;
     flex-shrink: 0;
+  }
+
+  .movie-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .movie-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
   }
 
   .movie-title {
@@ -933,10 +948,12 @@ def generate_html(
   <span><span class="swatch" style="background:var(--surface);border:2px solid var(--border)"></span> Not voted</span>
 </div>
 
-<div id="dashboard" class="dashboard" style="display:none"></div>
+<div id="top-pick-section" style="display:none"></div>
 
 <div id="loading">Loading votes...</div>
 <div class="table-wrap" id="table-wrap" style="display:none"></div>
+
+<div id="charts-section" class="dashboard" style="display:none"></div>
 
 <div class="summary" id="summary" style="display:none">
   <h3>Top Picks (most votes)</h3>
@@ -1070,9 +1087,14 @@ function getMyVoteForSlot(movie, date, time) {
 }
 
 function renderDashboard() {
-  const dash = document.getElementById('dashboard');
-  if (allVotes.length === 0) { dash.style.display = 'none'; return; }
-  dash.style.display = 'grid';
+  const topPickEl = document.getElementById('top-pick-section');
+  const chartsEl = document.getElementById('charts-section');
+
+  if (allVotes.length === 0) {
+    topPickEl.style.display = 'none';
+    chartsEl.style.display = 'none';
+    return;
+  }
 
   // Aggregate data
   const bySlot = {};   // "Movie — Date Time" => total people
@@ -1090,16 +1112,18 @@ function renderDashboard() {
     byMovieDate[mdKey] = (byMovieDate[mdKey] || 0) + p;
   }
 
-  // Top Pick
+  // Top Pick (above the table)
   const topSlot = Object.entries(bySlot).sort((a, b) => b[1] - a[1])[0];
-  let html = '<div class="dashboard-card top-pick-card"><h3>Current Top Pick</h3>';
+  let topHtml = '<div class="dashboard-card top-pick-card"><h3>Current Top Pick</h3>';
   if (topSlot) {
-    html += '<div class="pick-movie">' + escHtml(topSlot[0]) + '</div>';
-    html += '<div class="pick-count">' + topSlot[1] + ' people interested</div>';
+    topHtml += '<div class="pick-movie">' + escHtml(topSlot[0]) + '</div>';
+    topHtml += '<div class="pick-count">' + topSlot[1] + ' people interested</div>';
   }
-  html += '</div>';
+  topHtml += '</div>';
+  topPickEl.innerHTML = topHtml;
+  topPickEl.style.display = 'block';
 
-  // Bar chart helper
+  // Charts (below the table)
   function barChart(title, data, color) {
     const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const max = sorted.length > 0 ? sorted[0][1] : 1;
@@ -1115,8 +1139,9 @@ function renderDashboard() {
     return h;
   }
 
-  html += barChart('Votes by Movie', byMovie, 'var(--accent)');
-  html += barChart('Votes by Day', byDate, 'var(--success)');
+  let chartsHtml = '';
+  chartsHtml += barChart('Votes by Movie', byMovie, 'var(--accent)');
+  chartsHtml += barChart('Votes by Day', byDate, 'var(--success)');
 
   // Combined heatmap
   const movieNames = Object.keys(byMovie).sort((a, b) => (byMovie[b] || 0) - (byMovie[a] || 0));
@@ -1124,25 +1149,26 @@ function renderDashboard() {
   let maxHm = 0;
   for (const v of Object.values(byMovieDate)) { if (v > maxHm) maxHm = v; }
 
-  html += '<div class="dashboard-card" style="grid-column:1/-1"><h3>Movie &times; Day Heatmap</h3><div class="heatmap-wrap">';
-  html += '<table class="heatmap-table"><thead><tr><th></th>';
-  for (const d of dateNames) { html += '<th>' + escHtml(d) + '</th>'; }
-  html += '</tr></thead><tbody>';
+  chartsHtml += '<div class="dashboard-card" style="grid-column:1/-1"><h3>Movie &times; Day Heatmap</h3><div class="heatmap-wrap">';
+  chartsHtml += '<table class="heatmap-table"><thead><tr><th></th>';
+  for (const d of dateNames) { chartsHtml += '<th>' + escHtml(d) + '</th>'; }
+  chartsHtml += '</tr></thead><tbody>';
   for (const m of movieNames) {
-    html += '<tr><td class="hm-label" title="' + escAttr(m) + '">' + escHtml(m) + '</td>';
+    chartsHtml += '<tr><td class="hm-label" title="' + escAttr(m) + '">' + escHtml(m) + '</td>';
     for (const d of dateNames) {
       const val = byMovieDate[m + '|' + d] || 0;
       const intensity = maxHm > 0 ? val / maxHm : 0;
       const bg = val > 0
         ? 'background:rgba(233,69,96,' + (0.15 + intensity * 0.7).toFixed(2) + ')'
         : '';
-      html += '<td style="' + bg + '">' + (val > 0 ? val : '') + '</td>';
+      chartsHtml += '<td style="' + bg + '">' + (val > 0 ? val : '') + '</td>';
     }
-    html += '</tr>';
+    chartsHtml += '</tr>';
   }
-  html += '</tbody></table></div></div>';
+  chartsHtml += '</tbody></table></div></div>';
 
-  dash.innerHTML = html;
+  chartsEl.innerHTML = chartsHtml;
+  chartsEl.style.display = 'grid';
 }
 
 function renderTable() {
@@ -1176,14 +1202,18 @@ function renderTable() {
 
     const rating = movie.imdb !== '?' ? ' &#11088; ' + movie.imdb + '/10' : '';
     const genre = movie.genre !== '?' ? movie.genre : '';
+    const hasLink = movie.imdb_url && movie.imdb_url.length > 0;
+    const linkOpen = hasLink ? '<a href="' + escAttr(movie.imdb_url) + '" target="_blank" rel="noopener" class="movie-link">' : '';
+    const linkClose = hasLink ? '</a>' : '';
     const posterImg = movie.poster
-      ? '<img src="' + escAttr(movie.poster) + '" alt="" class="movie-poster" />'
+      ? linkOpen + '<img src="' + escAttr(movie.poster) + '" alt="" class="movie-poster" />' + linkClose
       : '';
+    const titleHtml = linkOpen + escHtml(movie.title) + linkClose;
     html += '<td class="movie-cell">'
           + '<div class="movie-cell-inner">'
           + posterImg
           + '<div>'
-          + '<div class="movie-title">' + escHtml(movie.title) + '</div>'
+          + '<div class="movie-title">' + titleHtml + '</div>'
           + '<div class="movie-meta">' + escHtml(genre) + rating + '</div>'
           + '</div></div>'
           + '</td>';
