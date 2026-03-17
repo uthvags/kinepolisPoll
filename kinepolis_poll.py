@@ -1077,19 +1077,25 @@ function renderDashboard() {
 
   // Aggregate data
   const bySlot = {};   // "Movie — Date Time" => total people
-  const byMovie = {};  // movie => total people
-  const byDate = {};   // date => total people
+  const byMovie = {};  // movie => unique voter names
+  const byDate = {};   // date => unique voter names
   const byMovieDate = {}; // "movie|date" => total people
+  const movieVoters = {};  // movie => Set of voter names
+  const dateVoters = {};   // date => Set of voter names
 
   for (const v of allVotes) {
     const p = getTotalPeople(v);
     const slotKey = v.MovieTitle + ' \u2014 ' + v.ShowDate + ' ' + v.ShowTime;
     bySlot[slotKey] = (bySlot[slotKey] || 0) + p;
-    byMovie[v.MovieTitle] = (byMovie[v.MovieTitle] || 0) + p;
-    byDate[v.ShowDate] = (byDate[v.ShowDate] || 0) + p;
+    if (!movieVoters[v.MovieTitle]) movieVoters[v.MovieTitle] = new Set();
+    movieVoters[v.MovieTitle].add(v.VoterName);
+    if (!dateVoters[v.ShowDate]) dateVoters[v.ShowDate] = new Set();
+    dateVoters[v.ShowDate].add(v.VoterName);
     const mdKey = v.MovieTitle + '|' + v.ShowDate;
     byMovieDate[mdKey] = (byMovieDate[mdKey] || 0) + p;
   }
+  for (const [k, s] of Object.entries(movieVoters)) byMovie[k] = s.size;
+  for (const [k, s] of Object.entries(dateVoters)) byDate[k] = s.size;
 
   // Top Pick (above the table)
   const topSlot = Object.entries(bySlot).sort((a, b) => b[1] - a[1])[0];
@@ -1119,8 +1125,8 @@ function renderDashboard() {
   }
 
   let chartsHtml = '';
-  chartsHtml += barChart('Votes by Movie', byMovie, 'var(--accent)');
-  chartsHtml += barChart('Votes by Day', byDate, 'var(--success)');
+  chartsHtml += barChart('Voters by Movie', byMovie, 'var(--accent)');
+  chartsHtml += barChart('Voters by Day', byDate, 'var(--success)');
 
   // Combined heatmap
   const movieNames = Object.keys(byMovie).sort((a, b) => (byMovie[b] || 0) - (byMovie[a] || 0));
