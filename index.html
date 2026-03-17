@@ -137,6 +137,20 @@
     background: var(--surface);
   }
 
+  .movie-cell-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .movie-poster {
+    width: 45px;
+    height: 65px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
   .movie-title {
     font-weight: 600;
     font-size: 0.95rem;
@@ -290,16 +304,204 @@
     background: rgba(255,255,255,0.03);
   }
 
+  /* Dashboard */
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .dashboard-card {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .dashboard-card h3 {
+    color: var(--accent);
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+
+  .top-pick-card {
+    grid-column: 1 / -1;
+    text-align: center;
+    background: linear-gradient(135deg, var(--card), var(--surface));
+    border: 2px solid var(--accent);
+  }
+
+  .top-pick-card .pick-movie {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .top-pick-card .pick-detail {
+    font-size: 1rem;
+    color: var(--text-dim);
+  }
+
+  .top-pick-card .pick-count {
+    font-size: 0.9rem;
+    color: var(--success);
+    margin-top: 4px;
+  }
+
+  .chart-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+  }
+
+  .chart-bar-label {
+    width: 120px;
+    text-align: right;
+    padding-right: 8px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .chart-bar-track {
+    flex: 1;
+    height: 22px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .chart-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+
+  .chart-bar-value {
+    position: absolute;
+    right: 6px;
+    top: 2px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .heatmap-wrap {
+    overflow-x: auto;
+  }
+
+  .heatmap-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.75rem;
+  }
+
+  .heatmap-table th, .heatmap-table td {
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .heatmap-table th {
+    background: var(--card);
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  .heatmap-table .hm-label {
+    text-align: right;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-dim);
+  }
+
+  /* Top Picks details */
+  .summary-item details summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .summary-item details summary::-webkit-details-marker { display: none; }
+
+  .summary-item details summary::after {
+    content: '\25B6';
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-left: 8px;
+    transition: transform 0.2s;
+  }
+
+  .summary-item details[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .voter-detail-list {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .voter-detail-list div {
+    padding: 2px 0;
+  }
+
+  /* Admin grouped */
+  .admin-group {
+    margin-bottom: 12px;
+  }
+
+  .admin-group details summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--card);
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--accent);
+    list-style: none;
+  }
+
+  .admin-group details summary::-webkit-details-marker { display: none; }
+
+  .admin-group details summary::before {
+    content: '\25B6 ';
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .admin-group details[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  .admin-group .admin-table {
+    margin-top: 6px;
+    margin-left: 12px;
+  }
+
   @media (max-width: 768px) {
     body { padding: 10px; }
     th, td { padding: 6px 8px; }
     .time-btn { padding: 4px 10px; min-width: 70px; }
+    .dashboard { grid-template-columns: 1fr; }
+    .chart-bar-label { width: 80px; }
   }
 </style>
 </head>
 <body>
 
-<h1>Kinepolis Movie Night &mdash; 17 Mar to 19 Mar 2026</h1>
+<h1>Kinepolis Movie Night &mdash; 17 Mar to 23 Mar 2026</h1>
 <p class="subtitle">Click a showtime to vote. Click again to remove your vote. Multiple votes allowed.</p>
 
 <div id="error-bar"></div>
@@ -350,6 +552,8 @@
   <span><span class="swatch" style="background:var(--surface);border:2px solid var(--border)"></span> Not voted</span>
 </div>
 
+<div id="dashboard" class="dashboard" style="display:none"></div>
+
 <div id="loading">Loading votes...</div>
 <div class="table-wrap" id="table-wrap" style="display:none"></div>
 
@@ -367,7 +571,7 @@
 // ─── Configuration ─────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://opadleobyehxumakwjvh.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYWRsZW9ieWVoeHVtYWt3anZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzE2MjAsImV4cCI6MjA4OTI0NzYyMH0.GsKMeIYORamBs56Q11cfuM0czWj7GmN7SEL2mCpkKA4";
-const MATRIX_DATA = {"dates": ["Tue 17 Mar", "Wed 18 Mar", "Thu 19 Mar"], "movies": [{"title": "Avatar: Fire and Ash", "imdb": "?", "genre": "Actie, Sciencefiction", "cells": {"Tue 17 Mar": ["18:45"], "Wed 18 Mar": ["18:45"]}}, {"title": "Boomers", "imdb": "?", "genre": "Drama, Komedie", "cells": {"Tue 17 Mar": ["17:30"]}}, {"title": "Champagne", "imdb": "?", "genre": "Komedie", "cells": {"Wed 18 Mar": ["18:00"], "Thu 19 Mar": ["18:00"]}}, {"title": "Crime 101", "imdb": "?", "genre": "Thriller, Misdaad", "cells": {"Tue 17 Mar": ["17:40"]}}, {"title": "Dhurandhar: The Revenge", "imdb": "?", "genre": "Actie, Thriller", "cells": {"Thu 19 Mar": ["18:00"]}}, {"title": "How to Make a Killing", "imdb": "?", "genre": "Drama, Misdaad", "cells": {"Tue 17 Mar": ["20:40"], "Wed 18 Mar": ["20:40"], "Thu 19 Mar": ["20:30"]}}, {"title": "Joe Speedboot", "imdb": "?", "genre": "Drama", "cells": {"Tue 17 Mar": ["17:50"], "Wed 18 Mar": ["17:50"]}}, {"title": "Jumpers", "imdb": "?", "genre": "Actie, Animatie", "cells": {"Tue 17 Mar": ["17:50", "20:10"]}}, {"title": "Marty Supreme", "imdb": "?", "genre": "Drama", "cells": {"Tue 17 Mar": ["18:30"], "Wed 18 Mar": ["18:30"], "Thu 19 Mar": ["20:10"]}}, {"title": "Mavka: The True Myth", "imdb": "?", "genre": "Liefde, Fantasie", "cells": {"Thu 19 Mar": ["17:40"]}}, {"title": "One Battle After Another", "imdb": "?", "genre": "Actie, Misdaad", "cells": {"Thu 19 Mar": ["18:45"]}}, {"title": "Paaz", "imdb": "?", "genre": "Drama, Komedie", "cells": {"Tue 17 Mar": ["18:00"], "Wed 18 Mar": ["18:00"], "Thu 19 Mar": ["17:45"]}}, {"title": "Project Hail Mary", "imdb": "?", "genre": "Sciencefiction", "cells": {"Wed 18 Mar": ["18:30", "19:30"], "Thu 19 Mar": ["18:30", "19:30"]}}, {"title": "Ready or Not 2: Here I Come", "imdb": "?", "genre": "Horror", "cells": {"Thu 19 Mar": ["17:50", "20:45"]}}, {"title": "Reminders of Him", "imdb": "?", "genre": "Liefde", "cells": {"Tue 17 Mar": ["17:40", "20:15"], "Wed 18 Mar": ["17:50", "20:15"], "Thu 19 Mar": ["17:35", "20:20"]}}, {"title": "Scream 7", "imdb": "?", "genre": "Horror, Thriller", "cells": {"Tue 17 Mar": ["17:45", "20:45"], "Wed 18 Mar": ["20:45"], "Thu 19 Mar": ["20:30"]}}, {"title": "Shelter", "imdb": "?", "genre": "Actie, Thriller", "cells": {"Tue 17 Mar": ["20:50"], "Wed 18 Mar": ["20:45"]}}, {"title": "The Bride", "imdb": "?", "genre": "Drama, Horror", "cells": {"Tue 17 Mar": ["20:30"], "Wed 18 Mar": ["17:45"]}}, {"title": "The Housemaid", "imdb": "?", "genre": "Thriller", "cells": {"Tue 17 Mar": ["20:20"], "Wed 18 Mar": ["20:30"], "Thu 19 Mar": ["20:25"]}}, {"title": "Wuthering Heights", "imdb": "?", "genre": "Drama", "cells": {"Tue 17 Mar": ["17:40", "20:25"], "Wed 18 Mar": ["17:40", "20:20"], "Thu 19 Mar": ["17:40"]}}]};
+const MATRIX_DATA = {"dates": ["Tue 17 Mar", "Wed 18 Mar", "Thu 19 Mar", "Fri 20 Mar", "Mon 23 Mar"], "movies": [{"title": "Avatar: Fire and Ash", "imdb": "?", "genre": "Actie, Sciencefiction", "poster": "", "cells": {"Tue 17 Mar": ["18:45"], "Wed 18 Mar": ["18:45"], "Fri 20 Mar": ["18:30"], "Mon 23 Mar": ["18:30"]}}, {"title": "Boomers", "imdb": "?", "genre": "Drama, Komedie", "poster": "", "cells": {"Tue 17 Mar": ["17:30"]}}, {"title": "Champagne", "imdb": "?", "genre": "Komedie", "poster": "", "cells": {"Wed 18 Mar": ["18:00"], "Thu 19 Mar": ["18:00"], "Fri 20 Mar": ["18:00"], "Mon 23 Mar": ["18:20"]}}, {"title": "Crime 101", "imdb": "?", "genre": "Thriller, Misdaad", "poster": "", "cells": {"Tue 17 Mar": ["17:40"]}}, {"title": "How to Make a Killing", "imdb": "?", "genre": "Drama, Misdaad", "poster": "", "cells": {"Tue 17 Mar": ["20:40"], "Wed 18 Mar": ["20:40"], "Thu 19 Mar": ["20:30"], "Fri 20 Mar": ["20:30"], "Mon 23 Mar": ["20:25"]}}, {"title": "Marty Supreme", "imdb": "?", "genre": "Drama", "poster": "", "cells": {"Tue 17 Mar": ["18:30"], "Wed 18 Mar": ["18:30"], "Thu 19 Mar": ["20:10"], "Mon 23 Mar": ["20:00"]}}, {"title": "Scream 7", "imdb": "?", "genre": "Horror, Thriller", "poster": "", "cells": {"Tue 17 Mar": ["17:45", "20:45"], "Wed 18 Mar": ["20:45"], "Thu 19 Mar": ["20:30"], "Fri 20 Mar": ["20:30"], "Mon 23 Mar": ["20:30"]}}, {"title": "Shelter", "imdb": "?", "genre": "Actie, Thriller", "poster": "", "cells": {"Tue 17 Mar": ["20:50"], "Wed 18 Mar": ["20:45"], "Fri 20 Mar": ["20:40"], "Mon 23 Mar": ["20:45"]}}, {"title": "The Housemaid", "imdb": "?", "genre": "Thriller", "poster": "", "cells": {"Tue 17 Mar": ["20:20"], "Wed 18 Mar": ["20:30"], "Thu 19 Mar": ["20:25"], "Fri 20 Mar": ["20:30"], "Mon 23 Mar": ["20:10"]}}, {"title": "Wuthering Heights", "imdb": "?", "genre": "Drama", "poster": "", "cells": {"Tue 17 Mar": ["17:40", "20:25"], "Wed 18 Mar": ["17:40", "20:20"], "Thu 19 Mar": ["17:40"], "Fri 20 Mar": ["17:40"], "Mon 23 Mar": ["17:40"]}}]};
 const HEADERS = {
   'apikey': SUPABASE_KEY,
   'Authorization': 'Bearer ' + SUPABASE_KEY,
@@ -484,9 +688,101 @@ function getMyVoteForSlot(movie, date, time) {
   );
 }
 
+function renderDashboard() {
+  const dash = document.getElementById('dashboard');
+  if (allVotes.length === 0) { dash.style.display = 'none'; return; }
+  dash.style.display = 'grid';
+
+  // Aggregate data
+  const bySlot = {};   // "Movie — Date Time" => total people
+  const byMovie = {};  // movie => total people
+  const byDate = {};   // date => total people
+  const byMovieDate = {}; // "movie|date" => total people
+
+  for (const v of allVotes) {
+    const p = getTotalPeople(v);
+    const slotKey = v.MovieTitle + ' — ' + v.ShowDate + ' ' + v.ShowTime;
+    bySlot[slotKey] = (bySlot[slotKey] || 0) + p;
+    byMovie[v.MovieTitle] = (byMovie[v.MovieTitle] || 0) + p;
+    byDate[v.ShowDate] = (byDate[v.ShowDate] || 0) + p;
+    const mdKey = v.MovieTitle + '|' + v.ShowDate;
+    byMovieDate[mdKey] = (byMovieDate[mdKey] || 0) + p;
+  }
+
+  // Top Pick
+  const topSlot = Object.entries(bySlot).sort((a, b) => b[1] - a[1])[0];
+  let html = '<div class="dashboard-card top-pick-card"><h3>Current Top Pick</h3>';
+  if (topSlot) {
+    html += '<div class="pick-movie">' + escHtml(topSlot[0]) + '</div>';
+    html += '<div class="pick-count">' + topSlot[1] + ' people interested</div>';
+  }
+  html += '</div>';
+
+  // Bar chart helper
+  function barChart(title, data, color) {
+    const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+    const max = sorted.length > 0 ? sorted[0][1] : 1;
+    let h = '<div class="dashboard-card"><h3>' + title + '</h3>';
+    for (const [label, val] of sorted.slice(0, 8)) {
+      const pct = (val / max * 100).toFixed(0);
+      h += '<div class="chart-bar-row">'
+        + '<div class="chart-bar-label" title="' + escAttr(label) + '">' + escHtml(label) + '</div>'
+        + '<div class="chart-bar-track"><div class="chart-bar-fill" style="width:' + pct + '%;background:' + color + '"></div>'
+        + '<div class="chart-bar-value">' + val + '</div></div></div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  html += barChart('Votes by Movie', byMovie, 'var(--accent)');
+  html += barChart('Votes by Day', byDate, 'var(--success)');
+
+  // Combined heatmap
+  const movieNames = Object.keys(byMovie).sort((a, b) => (byMovie[b] || 0) - (byMovie[a] || 0));
+  const dateNames = MATRIX_DATA.dates;
+  let maxHm = 0;
+  for (const v of Object.values(byMovieDate)) { if (v > maxHm) maxHm = v; }
+
+  html += '<div class="dashboard-card" style="grid-column:1/-1"><h3>Movie &times; Day Heatmap</h3><div class="heatmap-wrap">';
+  html += '<table class="heatmap-table"><thead><tr><th></th>';
+  for (const d of dateNames) { html += '<th>' + escHtml(d) + '</th>'; }
+  html += '</tr></thead><tbody>';
+  for (const m of movieNames) {
+    html += '<tr><td class="hm-label" title="' + escAttr(m) + '">' + escHtml(m) + '</td>';
+    for (const d of dateNames) {
+      const val = byMovieDate[m + '|' + d] || 0;
+      const intensity = maxHm > 0 ? val / maxHm : 0;
+      const bg = val > 0
+        ? 'background:rgba(233,69,96,' + (0.15 + intensity * 0.7).toFixed(2) + ')'
+        : '';
+      html += '<td style="' + bg + '">' + (val > 0 ? val : '') + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div></div>';
+
+  dash.innerHTML = html;
+}
+
 function renderTable() {
   const dates = MATRIX_DATA.dates;
   const movies = MATRIX_DATA.movies;
+
+  // Pre-compute cell vote counts for heatmap shading
+  let maxCellVotes = 0;
+  const cellVoteCounts = {};
+  for (const movie of movies) {
+    for (const date of dates) {
+      const times = movie.cells[date] || [];
+      let cellTotal = 0;
+      for (const t of times) {
+        cellTotal += getVotersForSlot(movie.title, date, t).reduce((s, v) => s + getTotalPeople(v), 0);
+      }
+      const key = movie.title + '|' + date;
+      cellVoteCounts[key] = cellTotal;
+      if (cellTotal > maxCellVotes) maxCellVotes = cellTotal;
+    }
+  }
 
   let html = '<table><thead><tr><th>Movie</th>';
   for (const d of dates) {
@@ -499,9 +795,16 @@ function renderTable() {
 
     const rating = movie.imdb !== '?' ? ' &#11088; ' + movie.imdb + '/10' : '';
     const genre = movie.genre !== '?' ? movie.genre : '';
+    const posterImg = movie.poster
+      ? '<img src="' + escAttr(movie.poster) + '" alt="" class="movie-poster" />'
+      : '';
     html += '<td class="movie-cell">'
+          + '<div class="movie-cell-inner">'
+          + posterImg
+          + '<div>'
           + '<div class="movie-title">' + escHtml(movie.title) + '</div>'
           + '<div class="movie-meta">' + escHtml(genre) + rating + '</div>'
+          + '</div></div>'
           + '</td>';
 
     for (const date of dates) {
@@ -510,7 +813,16 @@ function renderTable() {
         html += '<td><span class="empty-cell">&mdash;</span></td>';
         continue;
       }
-      html += '<td><div class="time-buttons">';
+
+      // Heatmap shading
+      const cellKey = movie.title + '|' + date;
+      const cellCount = cellVoteCounts[cellKey] || 0;
+      const intensity = maxCellVotes > 0 ? cellCount / maxCellVotes : 0;
+      const bgStyle = intensity > 0
+        ? ' style="background:rgba(233,69,96,' + (0.08 + intensity * 0.35).toFixed(2) + ')"'
+        : '';
+
+      html += '<td' + bgStyle + '><div class="time-buttons">';
       for (const t of times) {
         const voters = getVotersForSlot(movie.title, date, t);
         const myVote = getMyVoteForSlot(movie.title, date, t);
@@ -544,6 +856,7 @@ function renderTable() {
 
   html += '</tbody></table>';
   document.getElementById('table-wrap').innerHTML = html;
+  renderDashboard();
   renderSummary();
 }
 
@@ -551,11 +864,14 @@ function renderSummary() {
   const tally = {};
   const peopleTally = {};
   const pvxTally = {};
+  const votersByKey = {};
   for (const v of allVotes) {
     const key = v.MovieTitle + ' — ' + v.ShowDate + ' ' + v.ShowTime;
     tally[key] = (tally[key] || 0) + 1;
     peopleTally[key] = (peopleTally[key] || 0) + getTotalPeople(v);
     if (v.isPvx === 'Yes') pvxTally[key] = (pvxTally[key] || 0) + 1;
+    if (!votersByKey[key]) votersByKey[key] = [];
+    votersByKey[key].push(v);
   }
 
   const sorted = Object.entries(peopleTally).sort((a, b) => b[1] - a[1]);
@@ -569,32 +885,68 @@ function renderSummary() {
   for (const [label, people] of sorted.slice(0, 10)) {
     const votes = tally[label];
     const pvx = pvxTally[label] || 0;
-    html += '<div class="summary-item"><span>' + escHtml(label) + '</span><span><strong>'
-          + people + '</strong> people, ' + pvx + ' PVX (' + votes + ' vote' + (votes !== 1 ? 's' : '') + ')</span></div>';
+    const voters = votersByKey[label] || [];
+
+    let voterListHtml = '<div class="voter-detail-list">';
+    for (const v of voters) {
+      const extras = [];
+      if (v.isPvx === 'Yes') extras.push('PVX');
+      if (v.Partners > 0) extras.push(v.Partners + ' partner/kids');
+      if (v.Others > 0) extras.push(v.Others + ' others');
+      const extraStr = extras.length > 0 ? ' (' + extras.join(', ') + ')' : '';
+      voterListHtml += '<div>' + escHtml(v.VoterName) + extraStr + ' — ' + getTotalPeople(v) + ' total</div>';
+    }
+    voterListHtml += '</div>';
+
+    html += '<div class="summary-item"><details><summary><span>' + escHtml(label) + '</span><span><strong>'
+          + people + '</strong> people, ' + pvx + ' PVX (' + votes + ' vote' + (votes !== 1 ? 's' : '') + ')</span></summary>'
+          + voterListHtml + '</details></div>';
   }
   document.getElementById('summary-list').innerHTML = html;
 }
 
 function renderAdmin() {
-  let html = '<table class="admin-table"><thead><tr>'
-    + '<th>Name</th><th>PVX?</th><th>Partners/kids</th><th>Others</th><th>Total</th><th>Movie</th><th>Date</th><th>Time</th>'
-    + '</tr></thead><tbody>';
-
-  const sorted = [...allVotes].sort((a, b) => a.VoterName.localeCompare(b.VoterName));
-  for (const v of sorted) {
-    html += '<tr>'
-      + '<td>' + escHtml(v.VoterName) + '</td>'
-      + '<td>' + (v.isPvx || '?') + '</td>'
-      + '<td>' + (v.Partners || 0) + '</td>'
-      + '<td>' + (v.Others || 0) + '</td>'
-      + '<td>' + getTotalPeople(v) + '</td>'
-      + '<td>' + escHtml(v.MovieTitle) + '</td>'
-      + '<td>' + escHtml(v.ShowDate) + '</td>'
-      + '<td>' + escHtml(v.ShowTime) + '</td>'
-      + '</tr>';
+  // Group by voter name
+  const groups = {};
+  for (const v of allVotes) {
+    if (!groups[v.VoterName]) groups[v.VoterName] = [];
+    groups[v.VoterName].push(v);
   }
 
-  html += '</tbody></table>';
+  const sortedNames = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  if (sortedNames.length === 0) {
+    document.getElementById('admin-table').innerHTML = '<p style="color:var(--text-dim)">No votes yet.</p>';
+    return;
+  }
+
+  let html = '';
+  for (const name of sortedNames) {
+    const votes = groups[name];
+    const sample = votes[0];
+    const pvxLabel = sample.isPvx === 'Yes' ? 'PVX' : 'non-PVX';
+    const totalPeople = getTotalPeople(sample);
+
+    html += '<div class="admin-group"><details><summary>'
+      + escHtml(name) + ' &mdash; ' + pvxLabel
+      + ', ' + (sample.Partners || 0) + ' partners/kids, ' + (sample.Others || 0) + ' others'
+      + ' (' + votes.length + ' vote' + (votes.length !== 1 ? 's' : '') + ')'
+      + '</summary>';
+
+    html += '<table class="admin-table"><thead><tr>'
+      + '<th>Movie</th><th>Date</th><th>Time</th>'
+      + '</tr></thead><tbody>';
+
+    for (const v of votes) {
+      html += '<tr>'
+        + '<td>' + escHtml(v.MovieTitle) + '</td>'
+        + '<td>' + escHtml(v.ShowDate) + '</td>'
+        + '<td>' + escHtml(v.ShowTime) + '</td>'
+        + '</tr>';
+    }
+
+    html += '</tbody></table></details></div>';
+  }
+
   document.getElementById('admin-table').innerHTML = html;
 }
 
