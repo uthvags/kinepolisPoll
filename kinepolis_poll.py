@@ -798,6 +798,28 @@ def generate_html(
     color: var(--text-dim);
   }
 
+  .hm-split {
+    display: flex;
+    gap: 2px;
+  }
+
+  .hm-split-cell {
+    flex: 1;
+    border-radius: 3px;
+    padding: 2px 4px;
+    text-align: center;
+    font-size: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .hm-split-time {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+  }
+
   /* Top Picks details */
   .summary-item details summary {
     cursor: pointer;
@@ -927,7 +949,7 @@ def generate_html(
   <span><span class="swatch" style="background:var(--surface);border:2px solid var(--border)"></span> Not voted</span>
 </div>
 
-<div id="top-pick-section" style="display:none"></div>
+<div id="top-pick-section" style="display:none;margin-bottom:20px"></div>
 
 <div id="loading">Loading votes...</div>
 <div class="table-wrap" id="table-wrap" style="display:none"></div>
@@ -1128,11 +1150,30 @@ function renderDashboard() {
   chartsHtml += barChart('Voters by Movie', byMovie, 'var(--accent)');
   chartsHtml += barChart('Voters by Day', byDate, 'var(--success)');
 
-  // Combined heatmap
+  // Combined heatmap — split cells by showtime when multiple viewings per day
   const movieNames = Object.keys(byMovie).sort((a, b) => (byMovie[b] || 0) - (byMovie[a] || 0));
   const dateNames = MATRIX_DATA.dates;
+
+  // Build per-showtime vote counts: "movie|date|time" => total people
+  const bySlotDetail = {};
   let maxHm = 0;
-  for (const v of Object.values(byMovieDate)) { if (v > maxHm) maxHm = v; }
+  for (const v of allVotes) {
+    const p = getTotalPeople(v);
+    const key = v.MovieTitle + '|' + v.ShowDate + '|' + v.ShowTime;
+    bySlotDetail[key] = (bySlotDetail[key] || 0) + p;
+    if (bySlotDetail[key] > maxHm) maxHm = bySlotDetail[key];
+  }
+
+  // Build lookup: movie+date => [{time, count}] from MATRIX_DATA
+  function getTimesForCell(movie, date) {
+    const movieData = MATRIX_DATA.movies.find(m => m.title === movie);
+    if (!movieData) return [];
+    const times = movieData.cells[date] || [];
+    return times.map(t => ({
+      time: t,
+      count: bySlotDetail[movie + '|' + date + '|' + t] || 0
+    }));
+  }
 
   chartsHtml += '<div class="dashboard-card" style="grid-column:1/-1"><h3>Movie &times; Day Heatmap</h3><div class="heatmap-wrap">';
   chartsHtml += '<table class="heatmap-table"><thead><tr><th></th>';
@@ -1141,12 +1182,31 @@ function renderDashboard() {
   for (const m of movieNames) {
     chartsHtml += '<tr><td class="hm-label" title="' + escAttr(m) + '">' + escHtml(m) + '</td>';
     for (const d of dateNames) {
-      const val = byMovieDate[m + '|' + d] || 0;
-      const intensity = maxHm > 0 ? val / maxHm : 0;
-      const bg = val > 0
-        ? 'background:rgba(233,69,96,' + (0.15 + intensity * 0.7).toFixed(2) + ')'
-        : '';
-      chartsHtml += '<td style="' + bg + '">' + (val > 0 ? val : '') + '</td>';
+      const slots = getTimesForCell(m, d);
+      if (slots.length === 0) {
+        chartsHtml += '<td></td>';
+      } else if (slots.length === 1) {
+        const val = slots[0].count;
+        const intensity = maxHm > 0 ? val / maxHm : 0;
+        const bg = val > 0
+          ? 'background:rgba(233,69,96,' + (0.15 + intensity * 0.7).toFixed(2) + ')'
+          : '';
+        chartsHtml += '<td style="' + bg + '">' + (val > 0 ? val : '') + '</td>';
+      } else {
+        // Multiple viewings — split cell
+        chartsHtml += '<td style="padding:2px"><div class="hm-split">';
+        for (const s of slots) {
+          const intensity = maxHm > 0 ? s.count / maxHm : 0;
+          const bg = s.count > 0
+            ? 'background:rgba(233,69,96,' + (0.15 + intensity * 0.7).toFixed(2) + ')'
+            : 'background:var(--bg)';
+          chartsHtml += '<div class="hm-split-cell" style="' + bg + '" title="' + escAttr(s.time) + '">'
+            + '<span class="hm-split-time">' + s.time + '</span>'
+            + (s.count > 0 ? '<span>' + s.count + '</span>' : '')
+            + '</div>';
+        }
+        chartsHtml += '</div></td>';
+      }
     }
     chartsHtml += '</tr>';
   }
