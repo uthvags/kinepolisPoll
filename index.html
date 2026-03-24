@@ -269,11 +269,14 @@
 
   .summary-item {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     padding: 4px 0;
     font-size: 0.9rem;
     border-bottom: 1px solid var(--border);
   }
+
+  .summary-item details { flex: 1; }
 
   .summary-item:last-child {
     border-bottom: none;
@@ -522,6 +525,22 @@
     margin-left: 12px;
   }
 
+  .export-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .export-btn:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
   @media (max-width: 768px) {
     body { padding: 10px; }
     th, td { padding: 6px 8px; }
@@ -530,6 +549,7 @@
     .chart-bar-label { width: 80px; }
   }
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -956,6 +976,7 @@ function renderSummary() {
   const peopleTally = {};
   const pvxTally = {};
   const votersByKey = {};
+  const keyMeta = {};
   for (const v of allVotes) {
     const key = v.MovieTitle + ' — ' + v.ShowDate + ' ' + v.ShowTime;
     tally[key] = (tally[key] || 0) + 1;
@@ -963,7 +984,9 @@ function renderSummary() {
     if (v.isPvx === 'Yes') pvxTally[key] = (pvxTally[key] || 0) + 1;
     if (!votersByKey[key]) votersByKey[key] = [];
     votersByKey[key].push(v);
+    if (!keyMeta[key]) keyMeta[key] = { movie: v.MovieTitle, date: v.ShowDate, time: v.ShowTime };
   }
+  window._summaryMeta = keyMeta;
 
   const sorted = Object.entries(peopleTally).sort((a, b) => b[1] - a[1]);
   if (sorted.length === 0) {
@@ -991,7 +1014,9 @@ function renderSummary() {
 
     html += '<div class="summary-item"><details><summary><span>' + escHtml(label) + '</span><span><strong>'
           + people + '</strong> people, ' + pvx + ' PVX (' + votes + ' vote' + (votes !== 1 ? 's' : '') + ')</span></summary>'
-          + voterListHtml + '</details></div>';
+          + voterListHtml + '</details>'
+          + '<button class="export-btn" data-key="' + escAttr(label) + '" onclick="exportShowtimeToExcel(this.dataset.key)">Export</button>'
+          + '</div>';
   }
   document.getElementById('summary-list').innerHTML = html;
 }
@@ -1039,6 +1064,35 @@ function renderAdmin() {
   }
 
   document.getElementById('admin-table').innerHTML = html;
+}
+
+function exportShowtimeToExcel(key) {
+  if (typeof XLSX === 'undefined') {
+    showError('Excel library not loaded. Check your internet connection.');
+    return;
+  }
+  const meta = window._summaryMeta && window._summaryMeta[key];
+  if (!meta) { showError('No data found for this showtime'); return; }
+
+  const voters = allVotes.filter(
+    v => v.MovieTitle === meta.movie && v.ShowDate === meta.date && v.ShowTime === meta.time
+  );
+
+  const rows = voters.map(v => ({
+    'Name': v.VoterName,
+    'PVX Member': v.isPvx || 'Yes',
+    'Partners': v.Partners || 0,
+    'Invitees': v.Others || 0,
+    'Amount to be paid': '',
+    'Amount paid': '',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 18 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Signups');
+  const filename = meta.movie + ' - ' + meta.date + ' ' + meta.time + '.xlsx';
+  XLSX.writeFile(wb, filename.replace(/[\\/:*?"<>|]/g, '_'));
 }
 
 function escHtml(s) {

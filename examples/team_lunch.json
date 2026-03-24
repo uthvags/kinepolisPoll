@@ -1,0 +1,52 @@
+{
+  "title": "Team Lunch Poll &mdash; Week 13",
+  "storage_prefix": "lunch",
+  "row_label": "Restaurant",
+  "columns": ["Mon 24 Mar", "Tue 25 Mar", "Wed 26 Mar", "Thu 27 Mar", "Fri 28 Mar"],
+  "items": [
+    {
+      "name": "Domino's Pizza",
+      "rating": "4.2",
+      "category": "Italian, Fast Food",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Dominos_pizza_logo.svg/120px-Dominos_pizza_logo.svg.png",
+      "detail_url": "https://www.dominos.nl",
+      "slots": {
+        "Mon 24 Mar": ["12:00", "12:30"],
+        "Wed 26 Mar": ["12:00", "12:30", "13:00"],
+        "Fri 28 Mar": ["12:00"]
+      }
+    },
+    {
+      "name": "Sumo Sushi",
+      "rating": "4.6",
+      "category": "Japanese, Sushi",
+      "slots": {
+        "Tue 25 Mar": ["12:00", "12:30"],
+        "Thu 27 Mar": ["12:00", "12:30"],
+        "Fri 28 Mar": ["12:00", "13:00"]
+      }
+    },
+    {
+      "name": "Burger King",
+      "rating": "3.8",
+      "category": "Burgers, Fast Food",
+      "slots": {
+        "Mon 24 Mar": ["12:00"],
+        "Tue 25 Mar": ["12:00"],
+        "Wed 26 Mar": ["12:00"],
+        "Thu 27 Mar": ["12:00"],
+        "Fri 28 Mar": ["12:00"]
+      }
+    },
+    {
+      "name": "Vapiano",
+      "rating": "4.1",
+      "category": "Italian, Pasta",
+      "detail_url": "https://www.vapiano.nl",
+      "slots": {
+        "Wed 26 Mar": ["12:00", "12:30"],
+        "Fri 28 Mar": ["12:00", "12:30"]
+      }
+    }
+  ]
+}

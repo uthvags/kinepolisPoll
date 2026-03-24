@@ -1,0 +1,45 @@
+{
+  "title": "Sprint Planning &mdash; Sprint 42",
+  "storage_prefix": "sprint42",
+  "row_label": "Story",
+  "columns": ["Week 1", "Week 2", "Week 3"],
+  "items": [
+    {
+      "name": "Auth service migration",
+      "rating": "8",
+      "category": "Backend, Security",
+      "slots": {
+        "Week 1": ["Start"],
+        "Week 2": ["Continue"],
+        "Week 3": ["Finish"]
+      }
+    },
+    {
+      "name": "Dashboard redesign",
+      "rating": "5",
+      "category": "Frontend, UX",
+      "slots": {
+        "Week 1": ["Start", "Prototype"],
+        "Week 2": ["Implement"]
+      }
+    },
+    {
+      "name": "API rate limiting",
+      "rating": "3",
+      "category": "Backend, Infra",
+      "slots": {
+        "Week 2": ["Start"],
+        "Week 3": ["Test", "Deploy"]
+      }
+    },
+    {
+      "name": "Mobile push notifications",
+      "rating": "5",
+      "category": "Mobile, Backend",
+      "slots": {
+        "Week 1": ["Spike"],
+        "Week 3": ["Implement", "Test"]
+      }
+    }
+  ]
+}
