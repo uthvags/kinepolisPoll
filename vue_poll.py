@@ -1,23 +1,27 @@
 """
-Kinepolis Movie Poll Creator
-==============================
-Scrapes movie showtimes from Kinepolis Enschede (WCST),
+Vue Cinemas Movie Poll Creator
+================================
+Scrapes movie showtimes from Vue Cinemas Enschede (cinemaId 1025),
 enriches with IMDB scores/genres (via OMDB API),
 and generates a self-contained HTML voting page.
+
+This is an addon wrapper around the same Kinepolis pipeline:
+the only swap is the scraper. enrich_movies / pick_movies /
+to_matrix_poll_data / generate_voting_page are reused as-is.
 
 Requirements:
     pip install playwright requests
 
 Optional:
-    export OMDB_API_KEY=your_key  (https://www.omdbapi.com/apikey.aspx)
+    set OMDB_API_KEY=your_key   (https://www.omdbapi.com/apikey.aspx)
 
 Usage:
-    python kinepolis_poll.py                          # next 7 days, all times
-    python kinepolis_poll.py --days 3                  # next 3 days
-    python kinepolis_poll.py --after 17:00             # only showtimes after 17:00
-    python kinepolis_poll.py --weekdays                # Mon-Fri only
-    python kinepolis_poll.py --weekend                 # Sat-Sun only
-    python kinepolis_poll.py --days 7 --after 18:00 --weekdays
+    python vue_poll.py                          # next 7 days, all times
+    python vue_poll.py --days 3                  # next 3 days
+    python vue_poll.py --after 17:00             # only showtimes after 17:00
+    python vue_poll.py --weekdays                # Mon-Fri only
+    python vue_poll.py --weekend                 # Sat-Sun only
+    python vue_poll.py --days 7 --after 18:00 --weekdays
 """
 
 import argparse
@@ -29,19 +33,27 @@ from datetime import datetime, timedelta
 import requests
 from playwright.sync_api import sync_playwright
 
+# Generic helpers — work on the movies dict regardless of source cinema.
 from kinepolis_scraper import (
     OMDB_API_KEY,
     enrich_movies,
     pick_movies,
-    scrape_kinepolis,
     to_matrix_poll_data,
 )
-from matrix_vote_generator import DEFAULT_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_URL, generate_voting_page
+from matrix_vote_generator import (
+    DEFAULT_SUPABASE_ANON_KEY,
+    DEFAULT_SUPABASE_URL,
+    generate_voting_page,
+)
+from vue_scraper import scrape_vue
+
+# Keep votes for Vue separated from Kinepolis votes in the shared Supabase table.
+STORAGE_PREFIX = "vue"
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Scrape Kinepolis showtimes and create a voting page with Supabase backend."
+        description="Scrape Vue Cinemas Enschede showtimes and create a voting page."
     )
     parser.add_argument("--days", type=int, default=7, help="Days to look ahead (default: 7)")
     parser.add_argument("--after", type=str, default=None, help="Only showtimes after HH:MM")
@@ -49,23 +61,23 @@ def main():
     parser.add_argument("--weekend", action="store_true", help="Sat-Sun only")
     parser.add_argument(
         "--supabase-url", type=str, default=DEFAULT_SUPABASE_URL,
-        help=f"Supabase project URL (default: {DEFAULT_SUPABASE_URL})"
+        help=f"Supabase project URL (default: {DEFAULT_SUPABASE_URL})",
     )
     parser.add_argument(
         "--supabase-key", type=str, default=DEFAULT_SUPABASE_ANON_KEY,
-        help="Supabase anon key"
+        help="Supabase anon key",
     )
     parser.add_argument(
-        "--output", type=str, default="index.html",
-        help="Output HTML file (default: index.html)"
+        "--output", type=str, default="vue.html",
+        help="Output HTML file (default: vue.html)",
     )
     parser.add_argument(
         "--reset", action="store_true",
-        help="Clear all votes from Supabase before generating"
+        help=f"Clear all votes from Supabase (PollId={STORAGE_PREFIX}) before generating",
     )
     parser.add_argument(
         "--no-pick", action="store_true",
-        help="Skip interactive movie picker (include all movies)"
+        help="Skip interactive movie picker (include all movies)",
     )
     args = parser.parse_args()
 
@@ -83,10 +95,10 @@ def main():
         day_filter = "weekend"
 
     if args.reset:
-        print("Clearing kinepolis votes from Supabase...")
+        print(f"Clearing {STORAGE_PREFIX} votes from Supabase...")
         try:
             resp = requests.delete(
-                f"{args.supabase_url}/rest/v1/votes?PollId=eq.kinepolis",
+                f"{args.supabase_url}/rest/v1/votes?PollId=eq.{STORAGE_PREFIX}",
                 headers={
                     "apikey": args.supabase_key,
                     "Authorization": f"Bearer {args.supabase_key}",
@@ -103,19 +115,19 @@ def main():
 
     with sync_playwright() as pw:
         print("=" * 60)
-        print(f"Scraping Kinepolis Enschede ({args.days} days)...")
+        print(f"Scraping Vue Cinemas Enschede ({args.days} days)...")
         if args.after:
             print(f"Filter: showtimes after {args.after}")
         print("=" * 60)
 
-        user_data_dir = os.path.join(os.path.expanduser("~"), ".kinepolis_poll_browser")
+        user_data_dir = os.path.join(os.path.expanduser("~"), ".vue_poll_browser")
         ctx = pw.chromium.launch_persistent_context(
             user_data_dir,
             headless=False,
             channel="msedge",
-            locale="en-GB",
+            locale="nl-NL",
         )
-        movies = scrape_kinepolis(ctx, args.days, args.after, day_filter)
+        movies = scrape_vue(ctx, args.days, args.after, day_filter)
         ctx.close()
 
         if not movies:
@@ -125,7 +137,7 @@ def main():
         if OMDB_API_KEY:
             print(f"\nFetching IMDB scores for {len(movies)} movies...")
         else:
-            print("\nNo OMDB_API_KEY — using Kinepolis genres.")
+            print("\nNo OMDB_API_KEY — using Vue genres (often empty).")
         enrich_movies(movies)
 
         total = sum(len(t) for d in movies.values() for t in d["times_by_date"].values())
@@ -144,12 +156,11 @@ def main():
                 print("\nNo movies selected!")
                 sys.exit(1)
 
-        # Build poll title
         week_start = datetime.now().strftime("%d %b")
         week_end = (datetime.now() + timedelta(days=args.days - 1)).strftime("%d %b %Y")
-        poll_title = f"Kinepolis Movie Night &mdash; {week_start} to {week_end}"
+        poll_title = f"Vue Enschede Movie Night &mdash; {week_start} to {week_end}"
 
-        poll_data = to_matrix_poll_data(movies, poll_title, storage_prefix="kinepolis")
+        poll_data = to_matrix_poll_data(movies, poll_title, storage_prefix=STORAGE_PREFIX)
         html = generate_voting_page(poll_data, args.supabase_url, args.supabase_key)
 
         with open(args.output, "w", encoding="utf-8") as f:
