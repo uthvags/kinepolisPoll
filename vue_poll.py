@@ -68,8 +68,8 @@ def main():
         help="Supabase anon key",
     )
     parser.add_argument(
-        "--output", type=str, default="vue.html",
-        help="Output HTML file (default: vue.html)",
+        "--output", type=str, default="index.html",
+        help="Output HTML file (default: index.html — overwrites the published poll)",
     )
     parser.add_argument(
         "--reset", action="store_true",

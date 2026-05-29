@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kinepolis Movie Poll</title>
+<title>Vue Enschede Movie Night &mdash; 29 May to 04 Jun 2026</title>
 <style>
   :root {
     --bg: #1a1a2e;
@@ -131,19 +131,19 @@
     z-index: 2;
   }
 
-  .movie-cell {
+  .item-cell {
     text-align: left;
     min-width: 220px;
     background: var(--surface);
   }
 
-  .movie-cell-inner {
+  .item-cell-inner {
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  .movie-poster {
+  .item-poster {
     width: 45px;
     height: 65px;
     object-fit: cover;
@@ -151,22 +151,22 @@
     flex-shrink: 0;
   }
 
-  .movie-link {
+  .item-link {
     color: inherit;
     text-decoration: none;
   }
 
-  .movie-link:hover {
+  .item-link:hover {
     color: var(--accent);
     text-decoration: underline;
   }
 
-  .movie-title {
+  .item-name {
     font-weight: 600;
     font-size: 0.95rem;
   }
 
-  .movie-meta {
+  .item-meta {
     font-size: 0.75rem;
     color: var(--text-dim);
     margin-top: 2px;
@@ -345,7 +345,7 @@
     border: 2px solid var(--accent);
   }
 
-  .top-pick-card .pick-movie {
+  .top-pick-card .pick-item {
     font-size: 1.4rem;
     font-weight: 700;
     color: var(--accent);
@@ -525,6 +525,177 @@
     margin-left: 12px;
   }
 
+  /* Admin editor panel */
+  #admin-editor {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  #admin-editor h2 {
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+  }
+
+  #admin-editor .editor-section {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 8px;
+  }
+
+  #admin-editor .editor-section h3 {
+    color: var(--accent);
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+  }
+
+  #admin-editor input[type="text"],
+  #admin-editor textarea {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    width: 100%;
+  }
+
+  #admin-editor input[type="text"]:focus,
+  #admin-editor textarea:focus {
+    border-color: var(--accent);
+  }
+
+  #admin-editor button {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin: 2px;
+  }
+
+  #admin-editor button:hover { background: var(--accent-hover); }
+
+  #admin-editor button.btn-secondary {
+    background: var(--card);
+  }
+
+  #admin-editor button.btn-secondary:hover {
+    background: var(--border);
+  }
+
+  #admin-editor button.btn-danger {
+    background: #c0392b;
+  }
+
+  #admin-editor button.btn-danger:hover {
+    background: #e74c3c;
+  }
+
+  .editor-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+
+  .editor-row input { flex: 1; min-width: 100px; }
+
+  .editor-grid {
+    overflow-x: auto;
+  }
+
+  .editor-grid table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.8rem;
+  }
+
+  .editor-grid th, .editor-grid td {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+    vertical-align: top;
+  }
+
+  .editor-grid th {
+    background: var(--card);
+    color: var(--accent);
+  }
+
+  .editor-grid td input {
+    width: 100%;
+    font-size: 0.8rem;
+  }
+
+  /* Supabase setup panel */
+  #supabase-setup {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #supabase-setup h3 {
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  #supabase-setup .setup-field {
+    margin-bottom: 12px;
+  }
+
+  #supabase-setup label {
+    display: block;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+
+  #supabase-setup input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  #supabase-setup input:focus { border-color: var(--accent); }
+
+  #supabase-setup button {
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+  }
+
+  #supabase-setup button:hover { background: var(--accent-hover); }
+
+  #supabase-setup .setup-status {
+    margin-top: 8px;
+    font-size: 0.85rem;
+  }
+
   .export-btn {
     background: var(--card);
     border: 1px solid var(--border);
@@ -553,10 +724,78 @@
 </head>
 <body>
 
-<h1>Kinepolis Movie Night &mdash; 17 Mar to 23 Mar 2026</h1>
-<p class="subtitle">Click a showtime to vote. Click again to remove your vote. Multiple votes allowed.</p>
+<h1 id="page-title">Vue Enschede Movie Night &mdash; 29 May to 04 Jun 2026</h1>
+<p class="subtitle">Click a slot to vote. Click again to remove your vote. Multiple votes allowed.</p>
 
 <div id="error-bar"></div>
+
+<!-- Supabase setup panel (shown when no config is baked in or stored) -->
+<div id="supabase-setup" style="display:none">
+  <h3>Supabase Configuration</h3>
+  <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:12px">
+    Enter your Supabase project details to enable voting. These are saved in your browser.
+  </p>
+  <div class="setup-field">
+    <label for="setup-supabase-url">Supabase Project URL</label>
+    <input type="text" id="setup-supabase-url" placeholder="https://your-project.supabase.co" />
+  </div>
+  <div class="setup-field">
+    <label for="setup-supabase-key">Supabase Anon Key</label>
+    <input type="text" id="setup-supabase-key" placeholder="eyJhbGci..." />
+  </div>
+  <button onclick="saveSupabaseConfig()">Save &amp; Connect</button>
+  <button onclick="testSupabaseConnection()" style="background:var(--card)">Test Connection</button>
+  <div class="setup-status" id="setup-status"></div>
+</div>
+
+<!-- Admin editor panel (toggled by ?admin=true) -->
+<div id="admin-editor" style="display:none">
+  <h2>Admin Editor</h2>
+
+  <div class="editor-section">
+    <h3>Poll Title</h3>
+    <input type="text" id="editor-title" onchange="editorUpdateTitle()" />
+  </div>
+
+  <div class="editor-section">
+    <h3>Supabase Config</h3>
+    <div class="editor-row">
+      <input type="text" id="editor-supabase-url" placeholder="Supabase URL" />
+      <input type="text" id="editor-supabase-key" placeholder="Supabase Anon Key" />
+      <button onclick="editorSaveSupabase()">Save</button>
+      <button onclick="editorTestSupabase()" class="btn-secondary">Test</button>
+    </div>
+    <div id="editor-supabase-status" style="font-size:0.8rem;margin-top:4px"></div>
+  </div>
+
+  <div class="editor-section">
+    <h3>Columns</h3>
+    <div id="editor-columns"></div>
+    <button onclick="editorAddColumn()" style="margin-top:8px">+ Add Column</button>
+  </div>
+
+  <div class="editor-section">
+    <h3>Items</h3>
+    <div id="editor-items"></div>
+    <button onclick="editorAddItem()" style="margin-top:8px">+ Add Item</button>
+  </div>
+
+  <div class="editor-section">
+    <h3>Slots Grid</h3>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:8px">Enter comma-separated slot labels per cell</p>
+    <div class="editor-grid" id="editor-slots-grid"></div>
+    <button onclick="editorRenderSlotsGrid()" style="margin-top:8px" class="btn-secondary">Refresh Grid</button>
+  </div>
+
+  <div class="editor-section" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button onclick="editorExportJSON()">Download JSON</button>
+    <label style="padding:6px 14px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:0.85rem;margin:2px">
+      Import CSV
+      <input type="file" accept=".csv" onchange="editorImportCSV(event)" style="display:none" />
+    </label>
+    <button onclick="editorApplyToPage()" class="btn-secondary">Apply to Page</button>
+  </div>
+</div>
 
 <div class="user-bar" id="name-bar" style="flex-direction:column;gap:10px;align-items:stretch;max-width:500px;margin:0 auto 20px">
   <div style="display:flex;gap:10px;align-items:center;justify-content:center">
@@ -623,24 +862,82 @@
 
 <script>
 // ─── Configuration ─────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://opadleobyehxumakwjvh.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYWRsZW9ieWVoeHVtYWt3anZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzE2MjAsImV4cCI6MjA4OTI0NzYyMH0.GsKMeIYORamBs56Q11cfuM0czWj7GmN7SEL2mCpkKA4";
-const MATRIX_DATA = {"dates": ["Tue 17 Mar", "Wed 18 Mar", "Thu 19 Mar", "Fri 20 Mar", "Mon 23 Mar"], "movies": [{"title": "Avatar: Fire and Ash", "imdb": "7.4", "genre": "Animation, Action, Adventure", "poster": "https://m.media-amazon.com/images/M/MV5BZDYxY2I1OGMtN2Y4MS00ZmU1LTgyNDAtODA0MzAyYjI0N2Y2XkEyXkFqcGc@._V1_SX300.jpg", "imdb_url": "https://www.imdb.com/title/tt1757678/", "cells": {"Tue 17 Mar": ["18:45"], "Wed 18 Mar": ["18:45"], "Fri 20 Mar": ["18:30"], "Mon 23 Mar": ["18:30"]}}, {"title": "Jumpers", "imdb": "6.3", "genre": "Action, Comedy, Short", "poster": "https://m.media-amazon.com/images/M/MV5BMTQyMDI2ODcyNF5BMl5BanBnXkFtZTgwNjQxMjY2MDE@._V1_SX300.jpg", "imdb_url": "https://www.imdb.com/title/tt0119431/", "cells": {"Tue 17 Mar": ["20:10"]}}, {"title": "Marty Supreme", "imdb": "8.1", "genre": "Drama, Sport", "poster": "https://m.media-amazon.com/images/M/MV5BZTRhYjI1MTItMWYwMi00MjY5LWI1OTktMzQwNzA3MWJlN2QyXkEyXkFqcGc@._V1_SX300.jpg", "imdb_url": "https://www.imdb.com/title/tt32916440/", "cells": {"Tue 17 Mar": ["18:30"], "Wed 18 Mar": ["18:30"], "Thu 19 Mar": ["20:10"], "Mon 23 Mar": ["20:00"]}}, {"title": "Project Hail Mary", "imdb": "?", "genre": "Sciencefiction", "poster": "https://kinepolis.nl/NL/65459BAD-CA99-4711-A97B-E049A5FA94D2/HO00006636/0000024106/RB\\u0026O_2526:_Die_Zauberfl\\u00f6te.jpg", "imdb_url": "https://www.imdb.com/title/tt12042730/", "cells": {"Wed 18 Mar": ["18:30", "19:30"], "Thu 19 Mar": ["18:30", "19:30"], "Fri 20 Mar": ["19:00", "20:00"], "Mon 23 Mar": ["18:30", "19:30"]}}, {"title": "Scream 7", "imdb": "?", "genre": "Horror, Thriller", "poster": "https://kinepolis.nl/NL/65459BAD-CA99-4711-A97B-E049A5FA94D2/HO00006882/0000023882/Scream_7.jpg", "imdb_url": "https://www.imdb.com/title/tt27047903/", "cells": {"Tue 17 Mar": ["20:45"], "Wed 18 Mar": ["20:45"], "Thu 19 Mar": ["20:30"], "Fri 20 Mar": ["20:30"], "Mon 23 Mar": ["20:30"]}}, {"title": "Shelter", "imdb": "7.6", "genre": "Drama, Romance, Sport", "poster": "https://m.media-amazon.com/images/M/MV5BMTQwMjcxMjc5MF5BMl5BanBnXkFtZTcwODAzNzc5MQ@@._V1_SX300.jpg", "imdb_url": "https://www.imdb.com/title/tt0942384/", "cells": {"Tue 17 Mar": ["20:50"], "Wed 18 Mar": ["20:45"], "Fri 20 Mar": ["20:40"], "Mon 23 Mar": ["20:45"]}}, {"title": "The Housemaid", "imdb": "6.8", "genre": "Drama, Mystery, Thriller", "poster": "https://m.media-amazon.com/images/M/MV5BMGU0ZThmMDUtYmZjMi00MDk5LWE2NTQtYzQ3NWZjNWZkZGE3XkEyXkFqcGc@._V1_SX300.jpg", "imdb_url": "https://www.imdb.com/title/tt27543632/", "cells": {"Tue 17 Mar": ["20:20"], "Wed 18 Mar": ["20:30"], "Thu 19 Mar": ["20:25"], "Fri 20 Mar": ["20:30"], "Mon 23 Mar": ["20:10"]}}, {"title": "Wuthering Heights", "imdb": "7.5", "genre": "Drama, Romance", "poster": "https://m.media-amazon.com/images/M/MV5BNTk5NzI2NGUtMTgzNS00YmY3LWE3MGItYWYwZTAwOThhM2IyXkEyXkFqcGc@._V1_SX300.jpg", "imdb_url": "https://www.imdb.com/title/tt0032145/", "cells": {"Tue 17 Mar": ["20:25"], "Wed 18 Mar": ["20:20"]}}]};
-const HEADERS = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': 'Bearer ' + SUPABASE_KEY,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation',
-};
+const STORAGE_PREFIX = "vue";
+const BAKED_SUPABASE_URL = "https://opadleobyehxumakwjvh.supabase.co";
+const BAKED_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYWRsZW9ieWVoeHVtYWt3anZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzE2MjAsImV4cCI6MjA4OTI0NzYyMH0.GsKMeIYORamBs56Q11cfuM0czWj7GmN7SEL2mCpkKA4";
+let MATRIX_DATA = {"columns": ["Fri 29 May", "Sat 30 May", "Sun 31 May", "Mon 01 Jun", "Tue 02 Jun", "Wed 03 Jun", "Thu 04 Jun"], "items": [{"name": "Children of Men", "rating": "7.9", "category": "Drama, Sci-Fi, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BMDNkNmNiYzYtYWY0YS00NWEwLTgwMWUtYjM0M2E4Nzk3MzhmXkEyXkFqcGc@._V1_SX300.jpg", "detail_url": "https://www.imdb.com/title/tt0206634/", "slots": {"Thu 04 Jun": ["20:30"]}}, {"name": "Kill Bill: The Whole Bloody Affair", "rating": "8.8", "category": "Action, Crime, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BZDc2YzhkODAtZmRmZS00YzcxLWJkYWEtM2ZhZjY3MmMyZmJiXkEyXkFqcGc@._V1_QL75_UX380_CR0,4,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt6019206/", "slots": {"Mon 01 Jun": ["18:30"]}}, {"name": "Obsession", "rating": "6.7", "category": "Drama, Mystery, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BMTk1MTg0ZDUtZGM0MC00OGJhLWJlZTgtY2MzNmY3ZmMzZjM1XkEyXkFqcGc@._V1_SX300.jpg", "detail_url": "https://www.imdb.com/title/tt0074991/", "slots": {"Fri 29 May": ["22:00"], "Sat 30 May": ["22:00"], "Sun 31 May": ["22:00"], "Mon 01 Jun": ["22:00"], "Tue 02 Jun": ["22:00"], "Wed 03 Jun": ["22:00"]}}, {"name": "Scary Movie", "rating": "6.3", "category": "Comedy", "image_url": "https://m.media-amazon.com/images/M/MV5BZGRmMGRhOWMtOTk3Ni00OTRjLTkyYTAtYzA1M2IzMGE3NGRkXkEyXkFqcGc@._V1_SX300.jpg", "detail_url": "https://www.imdb.com/title/tt0175142/", "slots": {"Thu 04 Jun": ["21:30"]}}, {"name": "Star Wars: The Mandalorian & Grogu", "rating": "?", "category": "?", "image_url": "https://www.vuecinemas.nl/-/media/vuecinemasnl/img/import/04e02f26-534e-4798-ab8c-fcb2ad43c878_star-wars-the-mandalorian-grogu_posters_star-wars_-the-mandalor.jpg?rev=d64c05b0c90d43e6b32d4a42157f39fc", "detail_url": "https://www.vuecinemas.nl/film/star-wars-the-mandalorian-grogu", "slots": {"Fri 29 May": ["18:20", "20:15"], "Sat 30 May": ["18:50", "20:45"], "Sun 31 May": ["18:50", "20:40"], "Mon 01 Jun": ["18:50", "21:20"], "Tue 02 Jun": ["18:50", "20:40"], "Wed 03 Jun": ["18:50", "20:50"]}}, {"name": "The Devil Wears Prada 2", "rating": "7.0", "category": "Comedy, Drama", "image_url": "https://m.media-amazon.com/images/M/MV5BZmM3ZDU3ODItZmY5Yi00OTQ2LWE5OTctZTA5NDBhMWJkOGY3XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt33612209/", "slots": {"Fri 29 May": ["19:00", "21:10"], "Sat 30 May": ["18:40", "20:20"], "Sun 31 May": ["18:40", "20:20"], "Mon 01 Jun": ["20:15"], "Tue 02 Jun": ["18:40", "20:20"], "Wed 03 Jun": ["19:20", "20:50"]}}, {"name": "The Super Mario Galaxy Movie (OV)", "rating": "6.4", "category": "Animation, Adventure, Comedy", "image_url": "https://m.media-amazon.com/images/M/MV5BMDg5MjRkNWEtYmU1Mi00MTExLTk5MDQtY2RiMWVkZWNiOThjXkEyXkFqcGc@._V1_QL75_UX380_CR0,20,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt28650488/", "slots": {"Sat 30 May": ["18:00"], "Sun 31 May": ["18:00"], "Tue 02 Jun": ["18:00"]}}], "row_label": "Movie"};
 
-let voterName = localStorage.getItem('kinepolis_voter') || '';
-let isPVX = localStorage.getItem('kinepolis_pvx') || 'Yes';
-let numPartners = parseInt(localStorage.getItem('kinepolis_partners') || '0', 10);
-let numOthers = parseInt(localStorage.getItem('kinepolis_others') || '0', 10);
+// Resolve Supabase config: baked-in > localStorage > prompt setup
+function getSupabaseUrl() {
+  if (BAKED_SUPABASE_URL) return BAKED_SUPABASE_URL;
+  return localStorage.getItem(STORAGE_PREFIX + '_supabase_url') || '';
+}
+function getSupabaseKey() {
+  if (BAKED_SUPABASE_KEY) return BAKED_SUPABASE_KEY;
+  return localStorage.getItem(STORAGE_PREFIX + '_supabase_key') || '';
+}
+
+let SUPABASE_URL = getSupabaseUrl();
+let SUPABASE_KEY = getSupabaseKey();
+
+function getHeaders() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+  };
+}
+
+let voterName = localStorage.getItem(STORAGE_PREFIX + '_voter') || '';
+let isPVX = localStorage.getItem(STORAGE_PREFIX + '_pvx') || 'Yes';
+let numPartners = parseInt(localStorage.getItem(STORAGE_PREFIX + '_partners') || '0', 10);
+let numOthers = parseInt(localStorage.getItem(STORAGE_PREFIX + '_others') || '0', 10);
 let allVotes = [];
 
 function getTotalPeople(v) {
   return 1 + (v.Partners || 0) + (v.Others || 0);
+}
+
+// ─── Supabase setup (browser-side) ─────────────────────────────────────────
+
+function saveSupabaseConfig() {
+  const url = document.getElementById('setup-supabase-url').value.trim();
+  const key = document.getElementById('setup-supabase-key').value.trim();
+  if (!url || !key) {
+    document.getElementById('setup-status').innerHTML = '<span style="color:var(--accent)">Both fields are required.</span>';
+    return;
+  }
+  localStorage.setItem(STORAGE_PREFIX + '_supabase_url', url);
+  localStorage.setItem(STORAGE_PREFIX + '_supabase_key', key);
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  document.getElementById('supabase-setup').style.display = 'none';
+  document.getElementById('setup-status').innerHTML = '<span style="color:var(--success)">Saved!</span>';
+  init();
+}
+
+async function testSupabaseConnection() {
+  const url = document.getElementById('setup-supabase-url').value.trim();
+  const key = document.getElementById('setup-supabase-key').value.trim();
+  const statusEl = document.getElementById('setup-status');
+  if (!url || !key) {
+    statusEl.innerHTML = '<span style="color:var(--accent)">Both fields are required.</span>';
+    return;
+  }
+  statusEl.innerHTML = '<span style="color:var(--text-dim)">Testing...</span>';
+  try {
+    const resp = await fetch(url + '/rest/v1/votes?select=id&limit=1', {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (resp.ok) {
+      statusEl.innerHTML = '<span style="color:var(--success)">Connection successful!</span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--accent)">Failed: HTTP ' + resp.status + '</span>';
+    }
+  } catch (err) {
+    statusEl.innerHTML = '<span style="color:var(--accent)">Error: ' + err.message + '</span>';
+  }
 }
 
 // ─── Name handling ─────────────────────────────────────────────────────────
@@ -653,10 +950,10 @@ function saveName() {
   isPVX = document.getElementById('is-pvx').value;
   numPartners = parseInt(document.getElementById('num-partners').value, 10);
   numOthers = parseInt(document.getElementById('num-others').value, 10);
-  localStorage.setItem('kinepolis_voter', name);
-  localStorage.setItem('kinepolis_pvx', isPVX);
-  localStorage.setItem('kinepolis_partners', numPartners);
-  localStorage.setItem('kinepolis_others', numOthers);
+  localStorage.setItem(STORAGE_PREFIX + '_voter', name);
+  localStorage.setItem(STORAGE_PREFIX + '_pvx', isPVX);
+  localStorage.setItem(STORAGE_PREFIX + '_partners', numPartners);
+  localStorage.setItem(STORAGE_PREFIX + '_others', numOthers);
   document.getElementById('name-bar').style.display = 'none';
   document.getElementById('user-bar').style.display = 'flex';
   document.getElementById('current-user').textContent = name;
@@ -690,23 +987,24 @@ function toggleAdmin() {
 
 async function fetchAllVotes() {
   const resp = await fetch(
-    SUPABASE_URL + '/rest/v1/votes?select=id,MovieTitle,ShowDate,ShowTime,VoterName,isPvx,Partners,Others&limit=5000',
-    { headers: HEADERS }
+    SUPABASE_URL + '/rest/v1/votes?select=id,PollId,MovieTitle,ShowDate,ShowTime,VoterName,isPvx,Partners,Others&PollId=eq.' + encodeURIComponent(STORAGE_PREFIX) + '&limit=5000',
+    { headers: getHeaders() }
   );
   if (!resp.ok) throw new Error('Failed to fetch votes: ' + resp.status);
   return await resp.json();
 }
 
-async function addVote(movie, date, time) {
+async function addVote(item, column, slot) {
   const resp = await fetch(
     SUPABASE_URL + '/rest/v1/votes',
     {
       method: 'POST',
-      headers: HEADERS,
+      headers: getHeaders(),
       body: JSON.stringify({
-        MovieTitle: movie,
-        ShowDate: date,
-        ShowTime: time,
+        PollId: STORAGE_PREFIX,
+        MovieTitle: item,
+        ShowDate: column,
+        ShowTime: slot,
         VoterName: voterName,
         isPvx: isPVX,
         Partners: numPartners,
@@ -722,22 +1020,22 @@ async function addVote(movie, date, time) {
 async function deleteVote(itemId) {
   const resp = await fetch(
     SUPABASE_URL + '/rest/v1/votes?id=eq.' + itemId,
-    { method: 'DELETE', headers: HEADERS }
+    { method: 'DELETE', headers: getHeaders() }
   );
   if (!resp.ok) throw new Error('Failed to delete vote: ' + resp.status);
 }
 
 // ─── Rendering ─────────────────────────────────────────────────────────────
 
-function getVotersForSlot(movie, date, time) {
+function getVotersForSlot(item, column, slot) {
   return allVotes.filter(
-    v => v.MovieTitle === movie && v.ShowDate === date && v.ShowTime === time
+    v => v.MovieTitle === item && v.ShowDate === column && v.ShowTime === slot
   );
 }
 
-function getMyVoteForSlot(movie, date, time) {
+function getMyVoteForSlot(item, column, slot) {
   return allVotes.find(
-    v => v.MovieTitle === movie && v.ShowDate === date && v.ShowTime === time
+    v => v.MovieTitle === item && v.ShowDate === column && v.ShowTime === slot
       && v.VoterName === voterName
   );
 }
@@ -753,39 +1051,39 @@ function renderDashboard() {
   }
 
   // Aggregate data
-  const bySlot = {};   // "Movie — Date Time" => total people
-  const byMovie = {};  // movie => unique voter names
-  const byDate = {};   // date => unique voter names
-  const byMovieDate = {}; // "movie|date" => total people
-  const movieVoters = {};  // movie => Set of voter names
-  const dateVoters = {};   // date => Set of voter names
+  const bySlot = {};
+  const byItem = {};
+  const byColumn = {};
+  const byItemColumn = {};
+  const itemVoters = {};
+  const columnVoters = {};
 
   for (const v of allVotes) {
     const p = getTotalPeople(v);
-    const slotKey = v.MovieTitle + ' — ' + v.ShowDate + ' ' + v.ShowTime;
+    const slotKey = v.MovieTitle + ' \u2014 ' + v.ShowDate + ' ' + v.ShowTime;
     bySlot[slotKey] = (bySlot[slotKey] || 0) + p;
-    if (!movieVoters[v.MovieTitle]) movieVoters[v.MovieTitle] = new Set();
-    movieVoters[v.MovieTitle].add(v.VoterName);
-    if (!dateVoters[v.ShowDate]) dateVoters[v.ShowDate] = new Set();
-    dateVoters[v.ShowDate].add(v.VoterName);
+    if (!itemVoters[v.MovieTitle]) itemVoters[v.MovieTitle] = new Set();
+    itemVoters[v.MovieTitle].add(v.VoterName);
+    if (!columnVoters[v.ShowDate]) columnVoters[v.ShowDate] = new Set();
+    columnVoters[v.ShowDate].add(v.VoterName);
     const mdKey = v.MovieTitle + '|' + v.ShowDate;
-    byMovieDate[mdKey] = (byMovieDate[mdKey] || 0) + p;
+    byItemColumn[mdKey] = (byItemColumn[mdKey] || 0) + p;
   }
-  for (const [k, s] of Object.entries(movieVoters)) byMovie[k] = s.size;
-  for (const [k, s] of Object.entries(dateVoters)) byDate[k] = s.size;
+  for (const [k, s] of Object.entries(itemVoters)) byItem[k] = s.size;
+  for (const [k, s] of Object.entries(columnVoters)) byColumn[k] = s.size;
 
-  // Top Pick (above the table)
+  // Top Pick
   const topSlot = Object.entries(bySlot).sort((a, b) => b[1] - a[1])[0];
   let topHtml = '<div class="dashboard-card top-pick-card"><h3>Current Top Pick</h3>';
   if (topSlot) {
-    topHtml += '<div class="pick-movie">' + escHtml(topSlot[0]) + '</div>';
+    topHtml += '<div class="pick-item">' + escHtml(topSlot[0]) + '</div>';
     topHtml += '<div class="pick-count">' + topSlot[1] + ' people interested</div>';
   }
   topHtml += '</div>';
   topPickEl.innerHTML = topHtml;
   topPickEl.style.display = 'block';
 
-  // Charts (below the table)
+  // Charts
   function barChart(title, data, color) {
     const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const max = sorted.length > 0 ? sorted[0][1] : 1;
@@ -802,14 +1100,13 @@ function renderDashboard() {
   }
 
   let chartsHtml = '';
-  chartsHtml += barChart('Voters by Movie', byMovie, 'var(--accent)');
-  chartsHtml += barChart('Voters by Day', byDate, 'var(--success)');
+  chartsHtml += barChart('Voters by Item', byItem, 'var(--accent)');
+  chartsHtml += barChart('Voters by Column', byColumn, 'var(--success)');
 
-  // Combined heatmap — split cells by showtime when multiple viewings per day
-  const movieNames = Object.keys(byMovie).sort((a, b) => (byMovie[b] || 0) - (byMovie[a] || 0));
-  const dateNames = MATRIX_DATA.dates;
+  // Combined heatmap
+  const itemNames = Object.keys(byItem).sort((a, b) => (byItem[b] || 0) - (byItem[a] || 0));
+  const columnNames = MATRIX_DATA.columns;
 
-  // Build per-showtime vote counts: "movie|date|time" => total people
   const bySlotDetail = {};
   let maxHm = 0;
   for (const v of allVotes) {
@@ -819,25 +1116,24 @@ function renderDashboard() {
     if (bySlotDetail[key] > maxHm) maxHm = bySlotDetail[key];
   }
 
-  // Build lookup: movie+date => [{time, count}] from MATRIX_DATA
-  function getTimesForCell(movie, date) {
-    const movieData = MATRIX_DATA.movies.find(m => m.title === movie);
-    if (!movieData) return [];
-    const times = movieData.cells[date] || [];
-    return times.map(t => ({
-      time: t,
-      count: bySlotDetail[movie + '|' + date + '|' + t] || 0
+  function getSlotsForCell(itemName, col) {
+    const itemData = MATRIX_DATA.items.find(m => m.name === itemName);
+    if (!itemData) return [];
+    const slots = itemData.slots[col] || [];
+    return slots.map(t => ({
+      slot: t,
+      count: bySlotDetail[itemName + '|' + col + '|' + t] || 0
     }));
   }
 
-  chartsHtml += '<div class="dashboard-card" style="grid-column:1/-1"><h3>Movie &times; Day Heatmap</h3><div class="heatmap-wrap">';
+  chartsHtml += '<div class="dashboard-card" style="grid-column:1/-1"><h3>Item &times; Column Heatmap</h3><div class="heatmap-wrap">';
   chartsHtml += '<table class="heatmap-table"><thead><tr><th></th>';
-  for (const d of dateNames) { chartsHtml += '<th>' + escHtml(d) + '</th>'; }
+  for (const d of columnNames) { chartsHtml += '<th>' + escHtml(d) + '</th>'; }
   chartsHtml += '</tr></thead><tbody>';
-  for (const m of movieNames) {
+  for (const m of itemNames) {
     chartsHtml += '<tr><td class="hm-label" title="' + escAttr(m) + '">' + escHtml(m) + '</td>';
-    for (const d of dateNames) {
-      const slots = getTimesForCell(m, d);
+    for (const d of columnNames) {
+      const slots = getSlotsForCell(m, d);
       if (slots.length === 0) {
         chartsHtml += '<td></td>';
       } else if (slots.length === 1) {
@@ -848,15 +1144,14 @@ function renderDashboard() {
           : '';
         chartsHtml += '<td style="' + bg + '">' + (val > 0 ? val : '') + '</td>';
       } else {
-        // Multiple viewings — split cell
         chartsHtml += '<td style="padding:2px"><div class="hm-split">';
         for (const s of slots) {
           const intensity = maxHm > 0 ? s.count / maxHm : 0;
           const bg = s.count > 0
             ? 'background:rgba(233,69,96,' + (0.15 + intensity * 0.7).toFixed(2) + ')'
             : 'background:var(--bg)';
-          chartsHtml += '<div class="hm-split-cell" style="' + bg + '" title="' + escAttr(s.time) + '">'
-            + '<span class="hm-split-time">' + s.time + '</span>'
+          chartsHtml += '<div class="hm-split-cell" style="' + bg + '" title="' + escAttr(s.slot) + '">'
+            + '<span class="hm-split-time">' + s.slot + '</span>'
             + (s.count > 0 ? '<span>' + s.count + '</span>' : '')
             + '</div>';
         }
@@ -872,61 +1167,60 @@ function renderDashboard() {
 }
 
 function renderTable() {
-  const dates = MATRIX_DATA.dates;
-  const movies = MATRIX_DATA.movies;
+  const columns = MATRIX_DATA.columns;
+  const items = MATRIX_DATA.items;
 
   // Pre-compute cell vote counts for heatmap shading
   let maxCellVotes = 0;
   const cellVoteCounts = {};
-  for (const movie of movies) {
-    for (const date of dates) {
-      const times = movie.cells[date] || [];
+  for (const item of items) {
+    for (const col of columns) {
+      const slots = item.slots[col] || [];
       let cellTotal = 0;
-      for (const t of times) {
-        cellTotal += getVotersForSlot(movie.title, date, t).reduce((s, v) => s + getTotalPeople(v), 0);
+      for (const t of slots) {
+        cellTotal += getVotersForSlot(item.name, col, t).reduce((s, v) => s + getTotalPeople(v), 0);
       }
-      const key = movie.title + '|' + date;
+      const key = item.name + '|' + col;
       cellVoteCounts[key] = cellTotal;
       if (cellTotal > maxCellVotes) maxCellVotes = cellTotal;
     }
   }
 
-  let html = '<table><thead><tr><th>Movie</th>';
-  for (const d of dates) {
+  let html = '<table><thead><tr><th>' + escHtml(MATRIX_DATA.row_label || 'Item') + '</th>';
+  for (const d of columns) {
     html += '<th>' + d + '</th>';
   }
   html += '</tr></thead><tbody>';
 
-  for (const movie of movies) {
+  for (const item of items) {
     html += '<tr>';
 
-    const rating = movie.imdb !== '?' ? ' &#11088; ' + movie.imdb + '/10' : '';
-    const genre = movie.genre !== '?' ? movie.genre : '';
-    const hasLink = movie.imdb_url && movie.imdb_url.length > 0;
-    const linkOpen = hasLink ? '<a href="' + escAttr(movie.imdb_url) + '" target="_blank" rel="noopener" class="movie-link">' : '';
+    const rating = item.rating && item.rating !== '?' ? ' &#11088; ' + item.rating + '/10' : '';
+    const category = item.category && item.category !== '?' ? item.category : '';
+    const hasLink = item.detail_url && item.detail_url.length > 0;
+    const linkOpen = hasLink ? '<a href="' + escAttr(item.detail_url) + '" target="_blank" rel="noopener" class="item-link">' : '';
     const linkClose = hasLink ? '</a>' : '';
-    const posterImg = movie.poster
-      ? linkOpen + '<img src="' + escAttr(movie.poster) + '" alt="" class="movie-poster" />' + linkClose
+    const posterImg = item.image_url
+      ? linkOpen + '<img src="' + escAttr(item.image_url) + '" alt="" class="item-poster" />' + linkClose
       : '';
-    const titleHtml = linkOpen + escHtml(movie.title) + linkClose;
-    html += '<td class="movie-cell">'
-          + '<div class="movie-cell-inner">'
+    const nameHtml = linkOpen + escHtml(item.name) + linkClose;
+    html += '<td class="item-cell">'
+          + '<div class="item-cell-inner">'
           + posterImg
           + '<div>'
-          + '<div class="movie-title">' + titleHtml + '</div>'
-          + '<div class="movie-meta">' + escHtml(genre) + rating + '</div>'
+          + '<div class="item-name">' + nameHtml + '</div>'
+          + '<div class="item-meta">' + escHtml(category) + rating + '</div>'
           + '</div></div>'
           + '</td>';
 
-    for (const date of dates) {
-      const times = movie.cells[date] || [];
-      if (times.length === 0) {
+    for (const col of columns) {
+      const slots = item.slots[col] || [];
+      if (slots.length === 0) {
         html += '<td><span class="empty-cell">&mdash;</span></td>';
         continue;
       }
 
-      // Heatmap shading
-      const cellKey = movie.title + '|' + date;
+      const cellKey = item.name + '|' + col;
       const cellCount = cellVoteCounts[cellKey] || 0;
       const intensity = maxCellVotes > 0 ? cellCount / maxCellVotes : 0;
       const bgStyle = intensity > 0
@@ -934,9 +1228,9 @@ function renderTable() {
         : '';
 
       html += '<td' + bgStyle + '><div class="time-buttons">';
-      for (const t of times) {
-        const voters = getVotersForSlot(movie.title, date, t);
-        const myVote = getMyVoteForSlot(movie.title, date, t);
+      for (const t of slots) {
+        const voters = getVotersForSlot(item.name, col, t);
+        const myVote = getMyVoteForSlot(item.name, col, t);
         const votedClass = myVote ? ' voted' : '';
         const totalPeople = voters.reduce((sum, v) => sum + getTotalPeople(v), 0);
         const countBadge = voters.length > 0
@@ -953,9 +1247,9 @@ function renderTable() {
         }
 
         html += '<button class="time-btn' + votedClass + '" '
-              + 'data-movie="' + escAttr(movie.title) + '" '
-              + 'data-date="' + escAttr(date) + '" '
-              + 'data-time="' + escAttr(t) + '" '
+              + 'data-item="' + escAttr(item.name) + '" '
+              + 'data-column="' + escAttr(col) + '" '
+              + 'data-slot="' + escAttr(t) + '" '
               + 'onclick="toggleVote(this)">'
               + t + countBadge + tooltip
               + '</button>';
@@ -978,7 +1272,7 @@ function renderSummary() {
   const votersByKey = {};
   const keyMeta = {};
   for (const v of allVotes) {
-    const key = v.MovieTitle + ' — ' + v.ShowDate + ' ' + v.ShowTime;
+    const key = v.MovieTitle + ' \u2014 ' + v.ShowDate + ' ' + v.ShowTime;
     tally[key] = (tally[key] || 0) + 1;
     peopleTally[key] = (peopleTally[key] || 0) + getTotalPeople(v);
     if (v.isPvx === 'Yes') pvxTally[key] = (pvxTally[key] || 0) + 1;
@@ -1008,7 +1302,7 @@ function renderSummary() {
       if (v.Partners > 0) extras.push(v.Partners + ' partner/kids');
       if (v.Others > 0) extras.push(v.Others + ' others');
       const extraStr = extras.length > 0 ? ' (' + extras.join(', ') + ')' : '';
-      voterListHtml += '<div>' + escHtml(v.VoterName) + extraStr + ' — ' + getTotalPeople(v) + ' total</div>';
+      voterListHtml += '<div>' + escHtml(v.VoterName) + extraStr + ' \u2014 ' + getTotalPeople(v) + ' total</div>';
     }
     voterListHtml += '</div>';
 
@@ -1022,7 +1316,6 @@ function renderSummary() {
 }
 
 function renderAdmin() {
-  // Group by voter name
   const groups = {};
   for (const v of allVotes) {
     if (!groups[v.VoterName]) groups[v.VoterName] = [];
@@ -1040,7 +1333,6 @@ function renderAdmin() {
     const votes = groups[name];
     const sample = votes[0];
     const pvxLabel = sample.isPvx === 'Yes' ? 'PVX' : 'non-PVX';
-    const totalPeople = getTotalPeople(sample);
 
     html += '<div class="admin-group"><details><summary>'
       + escHtml(name) + ' &mdash; ' + pvxLabel
@@ -1049,7 +1341,7 @@ function renderAdmin() {
       + '</summary>';
 
     html += '<table class="admin-table"><thead><tr>'
-      + '<th>Movie</th><th>Date</th><th>Time</th>'
+      + '<th>Item</th><th>Column</th><th>Slot</th>'
       + '</tr></thead><tbody>';
 
     for (const v of votes) {
@@ -1111,25 +1403,25 @@ function escAttr(s) {
 async function toggleVote(btn) {
   if (!voterName) { changeName(); return; }
 
-  const movie = btn.dataset.movie;
-  const date = btn.dataset.date;
-  const time = btn.dataset.time;
+  const item = btn.dataset.item;
+  const column = btn.dataset.column;
+  const slot = btn.dataset.slot;
 
   btn.disabled = true;
   btn.style.opacity = '0.5';
 
   try {
-    const existing = getMyVoteForSlot(movie, date, time);
+    const existing = getMyVoteForSlot(item, column, slot);
     if (existing) {
       await deleteVote(existing.id);
       allVotes = allVotes.filter(v => v.id !== existing.id);
     } else {
-      const newItem = await addVote(movie, date, time);
+      const newItem = await addVote(item, column, slot);
       allVotes.push({
         id: newItem.id,
-        MovieTitle: movie,
-        ShowDate: date,
-        ShowTime: time,
+        MovieTitle: item,
+        ShowDate: column,
+        ShowTime: slot,
         VoterName: voterName,
         isPvx: isPVX,
         Partners: numPartners,
@@ -1152,9 +1444,297 @@ function showError(msg) {
   setTimeout(() => { bar.style.display = 'none'; }, 5000);
 }
 
+// ─── Admin Editor ──────────────────────────────────────────────────────────
+
+let editorData = JSON.parse(JSON.stringify(MATRIX_DATA));
+
+function editorInit() {
+  document.getElementById('editor-title').value = document.getElementById('page-title').textContent;
+  document.getElementById('editor-supabase-url').value = SUPABASE_URL;
+  document.getElementById('editor-supabase-key').value = SUPABASE_KEY;
+  editorRenderColumns();
+  editorRenderItems();
+  editorRenderSlotsGrid();
+}
+
+function editorUpdateTitle() {
+  const title = document.getElementById('editor-title').value.trim();
+  if (title) document.getElementById('page-title').textContent = title;
+}
+
+function editorSaveSupabase() {
+  const url = document.getElementById('editor-supabase-url').value.trim();
+  const key = document.getElementById('editor-supabase-key').value.trim();
+  if (url) localStorage.setItem(STORAGE_PREFIX + '_supabase_url', url);
+  if (key) localStorage.setItem(STORAGE_PREFIX + '_supabase_key', key);
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  document.getElementById('editor-supabase-status').innerHTML = '<span style="color:var(--success)">Saved to localStorage</span>';
+}
+
+async function editorTestSupabase() {
+  const url = document.getElementById('editor-supabase-url').value.trim();
+  const key = document.getElementById('editor-supabase-key').value.trim();
+  const statusEl = document.getElementById('editor-supabase-status');
+  if (!url || !key) { statusEl.innerHTML = '<span style="color:var(--accent)">Both fields required</span>'; return; }
+  statusEl.innerHTML = '<span style="color:var(--text-dim)">Testing...</span>';
+  try {
+    const resp = await fetch(url + '/rest/v1/votes?select=id&limit=1', {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    statusEl.innerHTML = resp.ok
+      ? '<span style="color:var(--success)">Connection OK!</span>'
+      : '<span style="color:var(--accent)">Failed: HTTP ' + resp.status + '</span>';
+  } catch (err) {
+    statusEl.innerHTML = '<span style="color:var(--accent)">Error: ' + err.message + '</span>';
+  }
+}
+
+function editorRenderColumns() {
+  const container = document.getElementById('editor-columns');
+  let html = '';
+  for (let i = 0; i < editorData.columns.length; i++) {
+    html += '<div class="editor-row">'
+      + '<input type="text" value="' + escAttr(editorData.columns[i]) + '" onchange="editorData.columns[' + i + ']=this.value;editorRenderSlotsGrid()" />'
+      + '<button class="btn-danger" onclick="editorRemoveColumn(' + i + ')">X</button>'
+      + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function editorAddColumn() {
+  const name = prompt('Column name:');
+  if (name && name.trim()) {
+    editorData.columns.push(name.trim());
+    editorRenderColumns();
+    editorRenderSlotsGrid();
+  }
+}
+
+function editorRemoveColumn(idx) {
+  const colName = editorData.columns[idx];
+  editorData.columns.splice(idx, 1);
+  for (const item of editorData.items) {
+    if (item.slots) delete item.slots[colName];
+  }
+  editorRenderColumns();
+  editorRenderSlotsGrid();
+}
+
+function editorRenderItems() {
+  const container = document.getElementById('editor-items');
+  let html = '';
+  for (let i = 0; i < editorData.items.length; i++) {
+    const item = editorData.items[i];
+    html += '<div class="editor-row">'
+      + '<input type="text" value="' + escAttr(item.name) + '" placeholder="Name" onchange="editorData.items[' + i + '].name=this.value;editorRenderSlotsGrid()" style="flex:2" />'
+      + '<input type="text" value="' + escAttr(item.rating || '') + '" placeholder="Rating" onchange="editorData.items[' + i + '].rating=this.value" style="flex:0.5;min-width:60px" />'
+      + '<input type="text" value="' + escAttr(item.category || '') + '" placeholder="Category" onchange="editorData.items[' + i + '].category=this.value" style="flex:1" />'
+      + '<button class="btn-danger" onclick="editorRemoveItem(' + i + ')">X</button>'
+      + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function editorAddItem() {
+  const name = prompt('Item name:');
+  if (name && name.trim()) {
+    editorData.items.push({ name: name.trim(), rating: '', category: '', image_url: '', detail_url: '', slots: {} });
+    editorRenderItems();
+    editorRenderSlotsGrid();
+  }
+}
+
+function editorRemoveItem(idx) {
+  editorData.items.splice(idx, 1);
+  editorRenderItems();
+  editorRenderSlotsGrid();
+}
+
+function editorRenderSlotsGrid() {
+  const container = document.getElementById('editor-slots-grid');
+  if (editorData.columns.length === 0 || editorData.items.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-dim)">Add columns and items first.</p>';
+    return;
+  }
+
+  let html = '<table><thead><tr><th>Item</th>';
+  for (const col of editorData.columns) {
+    html += '<th>' + escHtml(col) + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  for (let i = 0; i < editorData.items.length; i++) {
+    const item = editorData.items[i];
+    if (!item.slots) item.slots = {};
+    html += '<tr><td style="text-align:left;color:var(--text-dim)">' + escHtml(item.name) + '</td>';
+    for (let j = 0; j < editorData.columns.length; j++) {
+      const col = editorData.columns[j];
+      const currentSlots = (item.slots[col] || []).join(', ');
+      html += '<td><input type="text" value="' + escAttr(currentSlots) + '" '
+        + 'placeholder="e.g. 14:30, 19:00" '
+        + 'onchange="editorUpdateSlot(' + i + ',' + j + ',this.value)" '
+        + 'style="font-size:0.75rem" /></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function editorUpdateSlot(itemIdx, colIdx, value) {
+  const item = editorData.items[itemIdx];
+  const col = editorData.columns[colIdx];
+  if (!item.slots) item.slots = {};
+  const slots = value.split(',').map(s => s.trim()).filter(s => s);
+  if (slots.length > 0) {
+    item.slots[col] = slots;
+  } else {
+    delete item.slots[col];
+  }
+}
+
+function editorExportJSON() {
+  const title = document.getElementById('editor-title').value.trim() || 'Poll';
+  const exportData = {
+    title: title,
+    storage_prefix: STORAGE_PREFIX,
+    columns: editorData.columns,
+    items: editorData.items.map(item => ({
+      name: item.name,
+      rating: item.rating || '',
+      category: item.category || '',
+      image_url: item.image_url || '',
+      detail_url: item.detail_url || '',
+      slots: item.slots || {},
+    })),
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'poll_data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function editorImportCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    if (lines.length < 2) { showError('CSV must have a header row and at least one data row'); return; }
+
+    // Parse CSV header
+    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+    const nameIdx = headers.indexOf('name');
+    const colIdx = headers.indexOf('column');
+    const slotIdx = headers.indexOf('slot');
+
+    if (nameIdx < 0 || colIdx < 0 || slotIdx < 0) {
+      showError('CSV must have name, column, and slot columns');
+      return;
+    }
+
+    const ratingIdx = headers.indexOf('rating');
+    const categoryIdx = headers.indexOf('category');
+    const imageIdx = headers.indexOf('image_url');
+    const detailIdx = headers.indexOf('detail_url');
+
+    const itemsMap = {};
+    const columnsOrder = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const fields = parseCSVLine(lines[i]);
+      const name = (fields[nameIdx] || '').trim();
+      const column = (fields[colIdx] || '').trim();
+      const slot = (fields[slotIdx] || '').trim();
+      if (!name || !column || !slot) continue;
+
+      if (columnsOrder.indexOf(column) < 0) columnsOrder.push(column);
+
+      if (!itemsMap[name]) {
+        itemsMap[name] = {
+          name: name,
+          rating: ratingIdx >= 0 ? (fields[ratingIdx] || '').trim() : '',
+          category: categoryIdx >= 0 ? (fields[categoryIdx] || '').trim() : '',
+          image_url: imageIdx >= 0 ? (fields[imageIdx] || '').trim() : '',
+          detail_url: detailIdx >= 0 ? (fields[detailIdx] || '').trim() : '',
+          slots: {},
+        };
+      }
+      const item = itemsMap[name];
+      if (!item.slots[column]) item.slots[column] = [];
+      if (item.slots[column].indexOf(slot) < 0) item.slots[column].push(slot);
+    }
+
+    editorData.columns = columnsOrder;
+    editorData.items = Object.values(itemsMap);
+    editorRenderColumns();
+    editorRenderItems();
+    editorRenderSlotsGrid();
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && i + 1 < line.length && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        result.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function editorApplyToPage() {
+  MATRIX_DATA = JSON.parse(JSON.stringify(editorData));
+  renderTable();
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────
 
 async function init() {
+  // Check if we need Supabase setup
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('supabase-setup').style.display = 'block';
+    // Pre-fill from localStorage if available
+    const savedUrl = localStorage.getItem(STORAGE_PREFIX + '_supabase_url') || '';
+    const savedKey = localStorage.getItem(STORAGE_PREFIX + '_supabase_key') || '';
+    document.getElementById('setup-supabase-url').value = savedUrl;
+    document.getElementById('setup-supabase-key').value = savedKey;
+    // Still show the table with no votes
+    document.getElementById('table-wrap').style.display = 'block';
+    renderTable();
+    return;
+  }
+
   // Restore saved name & party size
   if (voterName) {
     document.getElementById('name-bar').style.display = 'none';
@@ -1177,6 +1757,15 @@ async function init() {
     console.error(err);
   }
 }
+
+// Admin mode toggle via ?admin=true
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('admin') === 'true') {
+    document.getElementById('admin-editor').style.display = 'block';
+    editorInit();
+  }
+})();
 
 init();
 </script>
