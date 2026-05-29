@@ -33,6 +33,7 @@ def scrape_kinepolis(
     num_days: int = 7,
     after_time: str | None = None,
     day_filter: str | None = None,  # "weekdays", "weekend", or None
+    start_date: datetime | None = None,
 ) -> dict[str, dict]:
     """
     Extracts movie + session data from the Drupal.settings JSON blob.
@@ -59,8 +60,8 @@ def scrape_kinepolis(
     elif day_filter == "weekend":
         print("  Day filter: weekend only (Sat-Sun)")
 
-    start_date = datetime.now()
-    end_date = start_date + timedelta(days=num_days)
+    start = start_date or datetime.now()
+    end_date = start + timedelta(days=num_days)
 
     page = context.new_page()
     url = KINEPOLIS_URL.format(complex=KINEPOLIS_COMPLEX)
@@ -156,7 +157,7 @@ def scrape_kinepolis(
             continue
 
         # Date range filter
-        if st_naive.date() < start_date.date() or st_naive.date() >= end_date.date():
+        if st_naive.date() < start.date() or st_naive.date() >= end_date.date():
             continue
 
         # Day filter (weekday: Mon=0..Fri=4, weekend: Sat=5, Sun=6)

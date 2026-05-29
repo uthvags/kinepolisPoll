@@ -43,6 +43,7 @@ def scrape_vue(
     num_days: int = 7,
     after_time: str | None = None,
     day_filter: str | None = None,  # "weekdays", "weekend", or None
+    start_date: datetime | None = None,
 ) -> dict[str, dict]:
     """
     Returns:
@@ -87,12 +88,12 @@ def scrape_vue(
 
     # 2) Pull films for each requested date through the same browser context
     #    so the API call carries the cookies the front-end just set.
-    start_date = datetime.now().date()
+    start_d = (start_date or datetime.now()).date()
     movies: dict[str, dict] = {}
     session_count = 0
 
     for offset in range(num_days):
-        d = start_date + timedelta(days=offset)
+        d = start_d + timedelta(days=offset)
         if day_filter == "weekdays" and d.weekday() >= 5:
             continue
         if day_filter == "weekend" and d.weekday() < 5:

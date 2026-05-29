@@ -44,6 +44,7 @@ def main():
         description="Scrape Kinepolis showtimes and create a voting page with Supabase backend."
     )
     parser.add_argument("--days", type=int, default=7, help="Days to look ahead (default: 7)")
+    parser.add_argument("--start", type=str, default=None, help="Poll start date YYYY-MM-DD (default: today)")
     parser.add_argument("--after", type=str, default=None, help="Only showtimes after HH:MM")
     parser.add_argument("--weekdays", action="store_true", help="Mon-Fri only")
     parser.add_argument("--weekend", action="store_true", help="Sat-Sun only")
@@ -75,6 +76,15 @@ def main():
             sys.exit(1)
         if ":" not in args.after:
             args.after += ":00"
+
+    if args.start:
+        try:
+            start_date = datetime.strptime(args.start, "%Y-%m-%d")
+        except ValueError:
+            print(f"Error: --start must be YYYY-MM-DD, got '{args.start}'")
+            sys.exit(1)
+    else:
+        start_date = datetime.now()
 
     day_filter = None
     if args.weekdays:
@@ -115,7 +125,7 @@ def main():
             channel="msedge",
             locale="en-GB",
         )
-        movies = scrape_kinepolis(ctx, args.days, args.after, day_filter)
+        movies = scrape_kinepolis(ctx, args.days, args.after, day_filter, start_date=start_date)
         ctx.close()
 
         if not movies:
@@ -145,8 +155,8 @@ def main():
                 sys.exit(1)
 
         # Build poll title
-        week_start = datetime.now().strftime("%d %b")
-        week_end = (datetime.now() + timedelta(days=args.days - 1)).strftime("%d %b %Y")
+        week_start = start_date.strftime("%d %b")
+        week_end = (start_date + timedelta(days=args.days - 1)).strftime("%d %b %Y")
         poll_title = f"Kinepolis Movie Night &mdash; {week_start} to {week_end}"
 
         poll_data = to_matrix_poll_data(movies, poll_title, storage_prefix="kinepolis")
