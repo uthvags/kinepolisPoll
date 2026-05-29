@@ -30,6 +30,26 @@ VUE_BASE = "https://www.vuecinemas.nl"
 VUE_CINEMA_ID = 1025  # Enschede
 VUE_LISTING_URL = f"{VUE_BASE}/cinema/enschede/nu-in-de-bioscoop"
 
+# Vue tags every session with attributes. Most are noise; skip those.
+# Anything else (Dolby Atmos, 3D, Voorpremière, Vue Plus, Nederlandse Versie,
+# Marathon, Soft Sound Screening, Mini Mornings, ...) gets appended to the
+# time label so distinct formats become distinct vote slots.
+_SKIP_ATTRS = {
+    "Singleseatrule",       # admin/booking flag
+    "Netherlands",           # default language, redundant
+    "Flitsende beelden",     # epilepsy warning, not booking-relevant
+}
+
+
+def _format_time_label(start_dt, attributes) -> str:
+    base = start_dt.strftime("%H:%M")
+    tags: list[str] = []
+    for a in attributes or []:
+        name = (a.get("name") or "").strip()
+        if name and name not in _SKIP_ATTRS and name not in tags:
+            tags.append(name)
+    return f"{base} {' '.join(tags)}" if tags else base
+
 
 def _parse_after(after_time: str | None) -> tuple[int, int]:
     if not after_time:
@@ -161,7 +181,7 @@ def scrape_vue(
                         continue
 
                     date_label = st.strftime("%a %d %b")
-                    time_label = st.strftime("%H:%M")
+                    time_label = _format_time_label(st, s.get("attributes"))
 
                     if title not in movies:
                         movies[title] = {

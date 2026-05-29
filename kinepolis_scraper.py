@@ -9,6 +9,7 @@ Requirements:
     pip install playwright requests
 """
 
+import bisect
 import os
 import re
 from collections import defaultdict
@@ -24,6 +25,37 @@ KINEPOLIS_URL = "https://kinepolis.nl/?complex={complex}&main_section=vandaag"
 KINEPOLIS_COMPLEX = "WCST"  # Kinepolis Enschede / West
 
 OMDB_API_KEY = os.environ.get("OMDB_API_KEY", "")
+
+
+# Each Kinepolis session record carries a sessionAttributes array; we surface
+# the format/language ones on the voting button so e.g. a 19:00 IMAX showing
+# becomes a distinct vote slot from the 19:00 regular showing.
+# Skip the "KW *" content warnings (Drugs/Seks/Taal/Geweld/Angst) and "Pauze".
+_KINEPOLIS_SKIP_PREFIXES = ("KW ",)
+_KINEPOLIS_SKIP_NAMES = {"Pauze"}
+
+
+def _kinepolis_session_tags(session_chunk: str) -> list[str]:
+    """Pull human-readable format/language descriptors out of one session record."""
+    tags: list[str] = []
+
+    sa_match = re.search(r'"sessionAttributes"\s*:\s*\[(.*?)\]', session_chunk, re.DOTALL)
+    if sa_match:
+        for nm in re.findall(r'"name":"([^"]+)"', sa_match.group(1)):
+            if nm in _KINEPOLIS_SKIP_NAMES or nm.startswith(_KINEPOLIS_SKIP_PREFIXES):
+                continue
+            if nm not in tags:
+                tags.append(nm)
+
+    # rawSessionAttributes catches plain (2D) IMAX showings that the structured
+    # array only labels as "IMAX W" — add a generic "IMAX" if not already tagged.
+    rsa = re.search(r'"rawSessionAttributes"\s*:\s*"([^"]+)"', session_chunk)
+    if rsa:
+        raw_tokens = {t.strip() for t in rsa.group(1).split(",")}
+        if "IMAX" in raw_tokens and not any("IMAX" in t for t in tags):
+            tags.append("IMAX")
+
+    return tags
 
 
 # ─── Scraping ────────────────────────────────────────────────────────────────────
@@ -138,14 +170,25 @@ def scrape_kinepolis(
     print(f"  Found Kinepolis IMDB codes for {len(film_imdb_codes)} films")
     print(f"  Found Kinepolis posters for {len(film_posters)} films")
 
-    # Extract sessions for our complex
+    # Extract sessions for our complex.
+    # Each session record runs from one "complexOperator" to the next (any
+    # complex, not just WCST), so we use the global list of operator positions
+    # to slice a tight, full-record chunk per session — the old fixed +2000
+    # window sometimes cut off sessionAttributes.
     movies: dict[str, dict] = {}
     session_count = 0
+
+    all_op_positions = [
+        m.start() for m in re.finditer(r'"complexOperator"', page_source)
+    ]
 
     for m in re.finditer(
         rf'"complexOperator":"{KINEPOLIS_COMPLEX}"', page_source
     ):
-        chunk = page_source[max(0, m.start() - 1): m.start() + 2000]
+        start_pos = m.start()
+        i = bisect.bisect_right(all_op_positions, start_pos)
+        end_pos = all_op_positions[i] if i < len(all_op_positions) else len(page_source)
+        chunk = page_source[start_pos:end_pos]
 
         st_match = re.search(r'"showtime":"([^"]+)"', chunk)
         if not st_match:
@@ -181,7 +224,9 @@ def scrape_kinepolis(
         genres = film_genres.get(fid, [])
 
         date_label = st_naive.strftime("%a %d %b")
-        time_label = st_naive.strftime("%H:%M")
+        time_base = st_naive.strftime("%H:%M")
+        tags = _kinepolis_session_tags(chunk)
+        time_label = f"{time_base} {' '.join(tags)}" if tags else time_base
 
         if title not in movies:
             imdb_code = film_imdb_codes.get(fid, "")
