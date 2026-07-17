@@ -31,7 +31,18 @@ import sys
 from datetime import datetime, timedelta
 
 import requests
-from playwright.sync_api import sync_playwright
+
+# patchright is a drop-in Playwright that strips the automation signals
+# (navigator.webdriver, the CDP Runtime.enable leak) Cloudflare uses to reject
+# the browser. Without it, solving the "Just a moment..." check never sticks
+# because Cloudflare re-flags the browser as a bot. Fall back to stock
+# Playwright if patchright isn't installed.
+try:
+    from patchright.sync_api import sync_playwright
+    _USING_PATCHRIGHT = True
+except ImportError:
+    from playwright.sync_api import sync_playwright
+    _USING_PATCHRIGHT = False
 
 # Generic helpers — work on the movies dict regardless of source cinema.
 from kinepolis_scraper import (
@@ -79,6 +90,15 @@ def main():
     parser.add_argument(
         "--no-pick", action="store_true",
         help="Skip interactive movie picker (include all movies)",
+    )
+    parser.add_argument(
+        "--cdp", action="store_true",
+        help="Attach to your own Edge over CDP instead of launching a browser. "
+             "Start Edge first with --remote-debugging-port (see README notes).",
+    )
+    parser.add_argument(
+        "--cdp-url", type=str, default="http://localhost:9222",
+        help="CDP endpoint of your running Edge (default: http://localhost:9222)",
     )
     args = parser.parse_args()
 
@@ -130,15 +150,52 @@ def main():
             print(f"Filter: showtimes after {args.after}")
         print("=" * 60)
 
-        user_data_dir = os.path.join(os.path.expanduser("~"), ".vue_poll_browser")
-        ctx = pw.chromium.launch_persistent_context(
-            user_data_dir,
-            headless=False,
-            channel="msedge",
-            locale="nl-NL",
-        )
+        cdp_browser = None
+        if args.cdp:
+            # Attach to the user's OWN Edge (launched by them with
+            # --remote-debugging-port). Because they started it — not us — the
+            # browser has no --enable-automation flag and navigator.webdriver is
+            # false, so once they've passed Cloudflare manually in that window
+            # our in-page fetches ride their real, human session.
+            print(f"  Attaching to your Edge over CDP at {args.cdp_url} ...")
+            try:
+                cdp_browser = pw.chromium.connect_over_cdp(args.cdp_url)
+            except Exception as e:
+                print(f"\nERROR: could not connect to Edge at {args.cdp_url} ({e}).")
+                print("Start Edge first, e.g. (PowerShell):")
+                print('  & "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe" '
+                      "--remote-debugging-port=9222 "
+                      '--user-data-dir="$env:USERPROFILE\\.vue_edge_cdp"')
+                print("Then open https://www.vuecinemas.nl/cinema/enschede/nu-in-de-bioscoop "
+                      "and pass the Cloudflare check before re-running with --cdp.")
+                sys.exit(1)
+            ctx = cdp_browser.contexts[0] if cdp_browser.contexts else cdp_browser.new_context()
+        else:
+            # patchright is most effective with a real browser binary and no
+            # extra automation-revealing flags. Use a dedicated profile dir so
+            # the cf_clearance cookie persists between runs. Channel is tunable
+            # via VUE_BROWSER_CHANNEL (msedge=default, chrome, chromium=bundled).
+            user_data_dir = os.path.join(os.path.expanduser("~"), ".vue_poll_browser_pr")
+            launch_kwargs = dict(
+                user_data_dir=user_data_dir,
+                headless=False,
+                locale="nl-NL",
+                no_viewport=True,
+            )
+            channel = os.environ.get("VUE_BROWSER_CHANNEL", "msedge")
+            if channel and channel != "chromium":
+                launch_kwargs["channel"] = channel
+            print(f"  Browser: {'patchright' if _USING_PATCHRIGHT else 'playwright'}"
+                  f" / channel={channel or 'bundled-chromium'}")
+            ctx = pw.chromium.launch_persistent_context(**launch_kwargs)
+
         movies = scrape_vue(ctx, args.days, args.after, day_filter, start_date=start_date)
-        ctx.close()
+
+        if cdp_browser is not None:
+            # Detach without killing the user's browser window.
+            cdp_browser.close()
+        else:
+            ctx.close()
 
         if not movies:
             print("\nNo movies found!")

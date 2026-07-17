@@ -21,6 +21,7 @@ Requirements:
     pip install playwright requests
 """
 
+import json
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -58,6 +59,89 @@ def _parse_after(after_time: str | None) -> tuple[int, int]:
     return int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
 
 
+def _films_api_url(date_obj) -> str:
+    date_iso = date_obj.strftime("%Y-%m-%dT00:00:00")
+    return (
+        f"{VUE_BASE}/api/microservice/showings/cinemas/{VUE_CINEMA_ID}/films"
+        f"?showingDate={date_iso}"
+        f"&minEmbargoLevel=3"
+        f"&includesSession=true"
+        f"&includeSessionAttributes=true"
+    )
+
+
+def _api_returns_json(page, url: str) -> bool:
+    """True if an in-page fetch of `url` yields JSON (challenge cleared)."""
+    try:
+        result = page.evaluate(
+            """async (url) => {
+                const r = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'accept': 'application/json' },
+                    credentials: 'include',
+                });
+                const text = await r.text();
+                return { ok: r.ok, isJson: text.trim().startsWith('[') || text.trim().startsWith('{') };
+            }""",
+            url,
+        )
+        return bool(result.get("ok") and result.get("isJson"))
+    except Exception:
+        return False
+
+
+def _clear_cloudflare(page, probe_url: str, max_rounds: int = 5) -> bool:
+    """
+    Vue's API sits behind a Cloudflare bot challenge. The challenge fires on
+    the background API fetch, which has no visible checkbox — so we navigate
+    the *top-level* browser to an API URL to surface Cloudflare's interactive
+    "Just a moment..." page. A human solves it once; Cloudflare then sets a
+    cf_clearance cookie for the whole origin and the per-day fetches succeed.
+
+    Returns True once the API serves JSON, False if it never clears.
+    """
+    # Fast path: maybe a prior run's cf_clearance cookie is still valid.
+    if _api_returns_json(page, probe_url):
+        return True
+
+    print("\n" + "!" * 60)
+    print("  Cloudflare bot check detected on Vue's API.")
+    print("  A browser window is open. If it shows a 'Just a moment...' /")
+    print("  'Verify you are human' check, complete it, then wait a moment.")
+    print("!" * 60)
+
+    for round_no in range(1, max_rounds + 1):
+        # Surface the interactive challenge in the top frame.
+        try:
+            page.goto(probe_url, wait_until="domcontentloaded", timeout=60000)
+        except Exception:
+            pass
+        page.wait_for_timeout(1500)
+
+        try:
+            input(f"  [{round_no}/{max_rounds}] Solve the check in the browser, "
+                  "then press Enter here to continue... ")
+        except EOFError:
+            # Non-interactive run — just wait and hope it auto-cleared.
+            page.wait_for_timeout(6000)
+
+        # Return to the listing page so subsequent fetches carry a normal
+        # referer, then verify the challenge is gone.
+        try:
+            page.goto(VUE_LISTING_URL, wait_until="domcontentloaded", timeout=60000)
+        except Exception:
+            pass
+        page.wait_for_timeout(1000)
+
+        if _api_returns_json(page, probe_url):
+            print("  Cloudflare check cleared — continuing.\n")
+            return True
+        print("  Still blocked; let's try again.")
+
+    print("  Could not get past the Cloudflare check.")
+    return False
+
+
 def scrape_vue(
     context: BrowserContext,
     num_days: int = 7,
@@ -86,9 +170,25 @@ def scrape_vue(
 
     # 1) Warm the session — Vue's API rejects requests without the cookies
     #    its Next.js front-end sets on the first visit.
-    page = context.new_page()
-    print(f"  Loading {VUE_LISTING_URL} ...")
-    page.goto(VUE_LISTING_URL, wait_until="networkidle", timeout=45000)
+    #
+    # When attached over CDP the user likely already has a vuecinemas.nl tab
+    # open where they've passed Cloudflare. Reuse it so we ride their live,
+    # human session instead of opening a fresh tab that Cloudflare re-checks.
+    page = None
+    for p in context.pages:
+        try:
+            if "vuecinemas.nl" in (p.url or ""):
+                page = p
+                print(f"  Reusing your open Vue tab: {p.url}")
+                break
+        except Exception:
+            continue
+
+    created_page = page is None
+    if created_page:
+        page = context.new_page()
+        print(f"  Loading {VUE_LISTING_URL} ...")
+        page.goto(VUE_LISTING_URL, wait_until="networkidle", timeout=45000)
 
     # Cookie banner (OneTrust). Best-effort, ignore if it's not there.
     for sel in (
@@ -106,12 +206,30 @@ def scrape_vue(
 
     page.wait_for_timeout(1500)
 
-    # 2) Pull films for each requested date through the same browser context
-    #    so the API call carries the cookies the front-end just set.
     start_d = (start_date or datetime.now()).date()
     movies: dict[str, dict] = {}
     session_count = 0
 
+    # 2) Clear Cloudflare's bot challenge once (human-in-the-loop) using the
+    #    first eligible date as the probe, so every per-day fetch below sails
+    #    through with the cf_clearance cookie it sets.
+    probe_date = start_d
+    for offset in range(num_days):
+        d = start_d + timedelta(days=offset)
+        if day_filter == "weekdays" and d.weekday() >= 5:
+            continue
+        if day_filter == "weekend" and d.weekday() < 5:
+            continue
+        probe_date = d
+        break
+
+    if not _clear_cloudflare(page, _films_api_url(probe_date)):
+        if created_page:
+            page.close()
+        return {}
+
+    # 3) Pull films for each requested date through the real browser page so
+    #    each call carries the session + cf_clearance cookies.
     for offset in range(num_days):
         d = start_d + timedelta(days=offset)
         if day_filter == "weekdays" and d.weekday() >= 5:
@@ -119,35 +237,37 @@ def scrape_vue(
         if day_filter == "weekend" and d.weekday() < 5:
             continue
 
-        date_iso = d.strftime("%Y-%m-%dT00:00:00")
-        api_url = (
-            f"{VUE_BASE}/api/microservice/showings/cinemas/{VUE_CINEMA_ID}/films"
-            f"?showingDate={date_iso}"
-            f"&minEmbargoLevel=3"
-            f"&includesSession=true"
-            f"&includeSessionAttributes=true"
-        )
+        api_url = _films_api_url(d)
 
+        # Fetch through the *real browser page* rather than context.request.
+        # Vue sits behind a WAF that fingerprints requests: Playwright's
+        # APIRequestContext (context.request) shares cookies but not the
+        # browser's TLS fingerprint / sec-* headers, so it gets 403'd.
+        # An in-page fetch() carries the genuine fingerprint + cookies and
+        # is indistinguishable from the site's own front-end calls.
         try:
-            resp = context.request.get(
+            result = page.evaluate(
+                """async (url) => {
+                    const r = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'accept': 'application/json' },
+                        credentials: 'include',
+                    });
+                    const text = await r.text();
+                    return { status: r.status, ok: r.ok, body: text };
+                }""",
                 api_url,
-                headers={
-                    "accept": "application/json",
-                    "referer": VUE_LISTING_URL,
-                    "accept-language": "nl-NL,nl;q=0.9,en;q=0.8",
-                },
-                timeout=20000,
             )
         except Exception as e:
             print(f"  WARNING: API call failed for {d.isoformat()}: {e}")
             continue
 
-        if not resp.ok:
-            print(f"  WARNING: HTTP {resp.status} for {d.isoformat()}")
+        if not result.get("ok"):
+            print(f"  WARNING: HTTP {result.get('status')} for {d.isoformat()}")
             continue
 
         try:
-            payload = resp.json()
+            payload = json.loads(result.get("body") or "")
         except Exception:
             print(f"  WARNING: non-JSON response for {d.isoformat()}")
             continue
@@ -199,7 +319,8 @@ def scrape_vue(
 
         print(f"  {d.strftime('%a %d %b')}: {len(films)} films, {day_sessions} sessions kept")
 
-    page.close()
+    if created_page:
+        page.close()
 
     # Sort + dedupe times within each cell
     for title in movies:
