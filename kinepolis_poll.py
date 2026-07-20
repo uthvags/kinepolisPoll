@@ -32,6 +32,7 @@ from playwright.sync_api import sync_playwright
 from kinepolis_scraper import (
     OMDB_API_KEY,
     enrich_movies,
+    filter_movies,
     pick_movies,
     scrape_kinepolis,
     to_matrix_poll_data,
@@ -40,6 +41,14 @@ from matrix_vote_generator import DEFAULT_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_UR
 
 
 def main():
+    # Force UTF-8 output so the box-drawing/checkmark characters in the
+    # interactive picker don't crash on legacy Windows codepages (cp1252).
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
     parser = argparse.ArgumentParser(
         description="Scrape Kinepolis showtimes and create a voting page with Supabase backend."
     )
@@ -67,6 +76,12 @@ def main():
     parser.add_argument(
         "--no-pick", action="store_true",
         help="Skip interactive movie picker (include all movies)"
+    )
+    parser.add_argument(
+        "--filter", type=str, default=None, metavar="TERMS",
+        help="Keep only movies matching these comma/space-separated substrings "
+             "(case-insensitive). Matches movie titles AND showtime labels, so "
+             "e.g. 'imax' keeps only IMAX showings."
     )
     args = parser.parse_args()
 
@@ -137,6 +152,14 @@ def main():
         else:
             print("\nNo OMDB_API_KEY — using Kinepolis genres.")
         enrich_movies(movies)
+
+        if args.filter:
+            before = len(movies)
+            movies = filter_movies(movies, args.filter)
+            print(f"\nFilter '{args.filter}': kept {len(movies)}/{before} movies.")
+            if not movies:
+                print("No movies matched the filter!")
+                sys.exit(1)
 
         total = sum(len(t) for d in movies.values() for t in d["times_by_date"].values())
         print(f"\n{len(movies)} movies, {total} showtimes:\n")

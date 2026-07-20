@@ -297,6 +297,44 @@ def enrich_movies(movies: dict[str, dict]) -> None:
             data["display_genre"] = ", ".join(data.get("genres", [])) or "?"
 
 
+# ─── String filter ───────────────────────────────────────────────────────────────
+
+def filter_movies(movies: dict[str, dict], patterns: str) -> dict[str, dict]:
+    """
+    Keep movies matching any of the (comma/space-separated) case-insensitive
+    substrings in `patterns`. Matching is two-tiered:
+
+      - If a movie's TITLE matches a term, the whole movie is kept (all showtimes).
+      - Otherwise, only the SHOWTIMES whose label matches are kept. This is what
+        makes e.g. `imax` return The Odyssey with just its IMAX slots, since the
+        "IMAX" tag lives on the showtime label ("19:00 IMAX"), not the title.
+
+    A movie is dropped entirely if neither its title nor any showtime matches.
+    """
+    terms = [t.strip().lower() for t in re.split(r"[,\s]+", patterns) if t.strip()]
+    if not terms:
+        return movies
+
+    result: dict[str, dict] = {}
+    for title, data in movies.items():
+        if any(term in title.lower() for term in terms):
+            result[title] = data
+            continue
+
+        kept_by_date = {}
+        for date, times in data["times_by_date"].items():
+            kept = [tm for tm in times if any(term in tm.lower() for term in terms)]
+            if kept:
+                kept_by_date[date] = kept
+
+        if kept_by_date:
+            pruned = dict(data)
+            pruned["times_by_date"] = kept_by_date
+            result[title] = pruned
+
+    return result
+
+
 # ─── Interactive movie picker ────────────────────────────────────────────────────
 
 def pick_movies(movies: dict[str, dict], sorted_titles: list[str]) -> dict[str, dict]:

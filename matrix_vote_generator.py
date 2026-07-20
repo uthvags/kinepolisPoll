@@ -208,16 +208,31 @@ def generate_voting_page(
     poll_data: dict,
     supabase_url: str = "",
     supabase_key: str = "",
+    admin_pass_hash: str | None = None,
 ) -> str:
     """
     Generate a self-contained HTML voting page from MatrixPollData.
 
     If supabase_url/supabase_key are empty, the page will show a setup panel
     where users can configure Supabase from the browser.
+
+    admin_pass_hash: SHA-256 hex of the admin password. When set, opening the
+    page with ?admin=true prompts for a password before the editor unlocks.
+    When None (default), it is auto-loaded from an `admin_pass.hash` file next
+    to this module if present (created by set_admin_password.py); if that file
+    is absent the admin editor stays open (no password) for backward compat.
     """
     errors = validate_poll_data(poll_data)
     if errors:
         raise ValueError("Invalid poll_data: " + "; ".join(errors))
+
+    if admin_pass_hash is None:
+        _hash_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin_pass.hash")
+        try:
+            with open(_hash_path, "r", encoding="utf-8") as _hf:
+                admin_pass_hash = _hf.read().strip()
+        except OSError:
+            admin_pass_hash = ""
 
     title = poll_data.get("title", "Poll")
     storage_prefix = poll_data.get("storage_prefix", "poll")
@@ -855,6 +870,15 @@ def generate_voting_page(
 
   .editor-row input { flex: 1; min-width: 100px; }
 
+  .editor-item {
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+  .editor-item .editor-row:last-child { margin-bottom: 0; }
+
   .editor-grid {
     overflow-x: auto;
   }
@@ -1033,12 +1057,13 @@ def generate_voting_page(
   </div>
 
   <div class="editor-section" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button onclick="editorExportJSON()">Download JSON</button>
-    <label style="padding:6px 14px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:0.85rem;margin:2px">
+    <button onclick="editorApplyToPage()" class="btn-secondary">Preview on Page</button>
+    <button onclick="editorDownloadPage()">Download updated index.html</button>
+    <button onclick="editorExportJSON()" class="btn-secondary">Download JSON</button>
+    <label style="padding:6px 14px;border-radius:6px;background:var(--card);color:#fff;font-weight:600;cursor:pointer;font-size:0.85rem;margin:2px">
       Import CSV
       <input type="file" accept=".csv" onchange="editorImportCSV(event)" style="display:none" />
     </label>
-    <button onclick="editorApplyToPage()" class="btn-secondary">Apply to Page</button>
   </div>
 </div>
 
@@ -1091,6 +1116,10 @@ def generate_voting_page(
 <div id="top-pick-section" style="display:none;margin-bottom:20px"></div>
 
 <div id="loading">Loading votes...</div>
+<div id="row-filter-bar" style="display:none;gap:8px;align-items:center;max-width:500px;margin:0 auto 14px">
+  <input type="text" id="row-filter" placeholder="Filter movies… e.g. imax" oninput="applyRowFilter()" style="flex:1" />
+  <span id="row-filter-count" style="font-size:0.8rem;color:var(--text-dim);white-space:nowrap"></span>
+</div>
 <div class="table-wrap" id="table-wrap" style="display:none"></div>
 
 <div id="charts-section" class="dashboard" style="display:none"></div>
@@ -1438,7 +1467,11 @@ function renderTable() {
   html += '</tr></thead><tbody>';
 
   for (const item of items) {
-    html += '<tr>';
+    // Index name + category + every showtime label so the in-page filter can
+    // match formats like "imax" that live on the showtimes, not the title.
+    const slotText = Object.values(item.slots || {}).reduce((a, s) => a.concat(s), []).join(' ');
+    const searchText = (item.name + ' ' + (item.category || '') + ' ' + slotText).toLowerCase();
+    html += '<tr data-search="' + escAttr(searchText) + '">';
 
     const rating = item.rating && item.rating !== '?' ? ' &#11088; ' + item.rating + '/10' : '';
     const category = item.category && item.category !== '?' ? item.category : '';
@@ -1506,8 +1539,27 @@ function renderTable() {
 
   html += '</tbody></table>';
   document.getElementById('table-wrap').innerHTML = html;
+  const filterBar = document.getElementById('row-filter-bar');
+  if (filterBar) filterBar.style.display = 'flex';
+  applyRowFilter();
   renderDashboard();
   renderSummary();
+}
+
+function applyRowFilter() {
+  const inp = document.getElementById('row-filter');
+  if (!inp) return;
+  const terms = inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const rows = document.querySelectorAll('#table-wrap tbody tr');
+  let shown = 0;
+  for (const row of rows) {
+    const hay = row.getAttribute('data-search') || '';
+    const match = terms.every(t => hay.indexOf(t) !== -1);
+    row.style.display = match ? '' : 'none';
+    if (match) shown++;
+  }
+  const countEl = document.getElementById('row-filter-count');
+  if (countEl) countEl.textContent = terms.length ? (shown + ' of ' + rows.length) : '';
 }
 
 function renderSummary() {
@@ -1771,11 +1823,18 @@ function editorRenderItems() {
   let html = '';
   for (let i = 0; i < editorData.items.length; i++) {
     const item = editorData.items[i];
-    html += '<div class="editor-row">'
+    html += '<div class="editor-item">'
+      + '<div class="editor-row">'
       + '<input type="text" value="' + escAttr(item.name) + '" placeholder="Name" onchange="editorData.items[' + i + '].name=this.value;editorRenderSlotsGrid()" style="flex:2" />'
       + '<input type="text" value="' + escAttr(item.rating || '') + '" placeholder="Rating" onchange="editorData.items[' + i + '].rating=this.value" style="flex:0.5;min-width:60px" />'
       + '<input type="text" value="' + escAttr(item.category || '') + '" placeholder="Category" onchange="editorData.items[' + i + '].category=this.value" style="flex:1" />'
       + '<button class="btn-danger" onclick="editorRemoveItem(' + i + ')">X</button>'
+      + '</div>'
+      + '<div class="editor-row">'
+      + '<input type="text" value="' + escAttr(item.image_url || '') + '" placeholder="Poster / image URL" onchange="editorData.items[' + i + '].image_url=this.value;editorRenderItems()" style="flex:1" />'
+      + '<input type="text" value="' + escAttr(item.detail_url || '') + '" placeholder="IMDB / detail link" onchange="editorData.items[' + i + '].detail_url=this.value" style="flex:1" />'
+      + (item.image_url ? '<img src="' + escAttr(item.image_url) + '" alt="" style="height:44px;width:auto;border-radius:4px;object-fit:cover" onerror="this.style.display=\'none\'" />' : '')
+      + '</div>'
       + '</div>';
   }
   container.innerHTML = html;
@@ -1862,6 +1921,48 @@ function editorExportJSON() {
   a.download = 'poll_data.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// Bake the current edits into a fresh copy of this page so poster/link fixes
+// persist. Fetches this page's own source, swaps the embedded MATRIX_DATA and
+// title, and downloads index.html — commit that file to publish the changes.
+async function editorDownloadPage() {
+  try {
+    const resp = await fetch(window.location.pathname + window.location.search.replace(/[?&]admin=true/, ''));
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    let src = await resp.text();
+
+    const title = document.getElementById('editor-title').value.trim() || 'Poll';
+    const newData = JSON.stringify({
+      columns: editorData.columns,
+      items: editorData.items.map(item => ({
+        name: item.name,
+        rating: item.rating || '',
+        category: item.category || '',
+        image_url: item.image_url || '',
+        detail_url: item.detail_url || '',
+        slots: item.slots || {},
+      })),
+      row_label: (MATRIX_DATA && MATRIX_DATA.row_label) || 'Item',
+    });
+
+    // Replacement functions (not strings) so '$' inside data isn't special.
+    let n = 0;
+    src = src.replace(/let MATRIX_DATA = .*;/, () => { n++; return 'let MATRIX_DATA = ' + newData + ';'; });
+    if (n === 0) throw new Error('could not find MATRIX_DATA in page source');
+    src = src.replace(/<title>[\s\S]*?<\/title>/, () => '<title>' + title.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</title>');
+
+    const blob = new Blob([src], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Could not build the page: ' + e.message +
+      '\nTip: this needs the page served over http(s) (e.g. GitHub Pages), not opened as a local file.');
+  }
 }
 
 function editorImportCSV(event) {
@@ -2003,13 +2104,26 @@ async function init() {
   }
 }
 
-// Admin mode toggle via ?admin=true
-(function() {
+// Admin mode toggle via ?admin=true (password-gated when a hash is baked in).
+const ADMIN_PASS_HASH = $admin_pass_hash_json;
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+(async function() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('admin') === 'true') {
-    document.getElementById('admin-editor').style.display = 'block';
-    editorInit();
+  if (params.get('admin') !== 'true') return;
+  if (ADMIN_PASS_HASH) {
+    const entered = prompt('Admin password:');
+    if (entered === null) return;               // cancelled
+    let ok = false;
+    try { ok = (await sha256Hex(entered)) === ADMIN_PASS_HASH; } catch (e) { ok = false; }
+    if (!ok) { alert('Wrong password.'); return; }
   }
+  document.getElementById('admin-editor').style.display = 'block';
+  editorInit();
 })();
 
 init();
@@ -2023,6 +2137,7 @@ init();
         supabase_url_json=json.dumps(supabase_url),
         supabase_key_json=json.dumps(supabase_key),
         matrix_json=matrix_json,
+        admin_pass_hash_json=json.dumps(admin_pass_hash or ""),
     )
 
 

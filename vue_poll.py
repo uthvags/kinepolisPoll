@@ -48,7 +48,9 @@ except ImportError:
 from kinepolis_scraper import (
     OMDB_API_KEY,
     enrich_movies,
+    filter_movies,
     pick_movies,
+    scrape_kinepolis,
     to_matrix_poll_data,
 )
 from matrix_vote_generator import (
@@ -92,6 +94,27 @@ def main():
         help="Skip interactive movie picker (include all movies)",
     )
     parser.add_argument(
+        "--filter", type=str, default=None, metavar="TERMS",
+        help="Keep only movies matching these comma/space-separated substrings "
+             "(case-insensitive). Matches movie titles AND showtime labels, so "
+             "e.g. 'imax' keeps only IMAX showings. Applied to the final list.",
+    )
+    parser.add_argument(
+        "--merge-kinepolis", action="store_true",
+        help="Also scrape Kinepolis Enschede and merge its movies in as extra rows "
+             "of this Vue poll (one combined voting page).",
+    )
+    parser.add_argument(
+        "--kinepolis-filter", type=str, default=None, metavar="TERMS",
+        help="Filter which Kinepolis movies get merged (same matching as --filter). "
+             "E.g. 'imax' merges only the IMAX screening. Implies --merge-kinepolis.",
+    )
+    parser.add_argument(
+        "--kinepolis-label", type=str, default=" (Kinepolis)", metavar="SUFFIX",
+        help="Suffix appended to merged Kinepolis movie titles so voters can tell "
+             "which cinema a row is for (default: ' (Kinepolis)').",
+    )
+    parser.add_argument(
         "--cdp", action="store_true",
         help="Attach to your own Edge over CDP instead of launching a browser. "
              "Start Edge first with --remote-debugging-port (see README notes).",
@@ -101,6 +124,10 @@ def main():
         help="CDP endpoint of your running Edge (default: http://localhost:9222)",
     )
     args = parser.parse_args()
+
+    # --kinepolis-filter only makes sense when we actually scrape Kinepolis.
+    if args.kinepolis_filter:
+        args.merge_kinepolis = True
 
     if args.after:
         if not re.match(r"^\d{1,2}(:\d{2})?$", args.after):
@@ -206,6 +233,51 @@ def main():
         else:
             print("\nNo OMDB_API_KEY — using Vue genres (often empty).")
         enrich_movies(movies)
+
+        # ── Merge extra rows from Kinepolis Enschede ──────────────────────────
+        if args.merge_kinepolis:
+            print("\n" + "=" * 60)
+            print("Scraping Kinepolis Enschede for extra rows...")
+            print("=" * 60)
+            kp_data_dir = os.path.join(os.path.expanduser("~"), ".kinepolis_poll_browser")
+            kp_ctx = pw.chromium.launch_persistent_context(
+                kp_data_dir,
+                headless=False,
+                channel="msedge",
+                locale="en-GB",
+            )
+            kp_movies = scrape_kinepolis(
+                kp_ctx, args.days, args.after, day_filter, start_date=start_date
+            )
+            kp_ctx.close()
+
+            if args.kinepolis_filter and kp_movies:
+                kp_movies = filter_movies(kp_movies, args.kinepolis_filter)
+
+            if not kp_movies:
+                print("  No Kinepolis movies matched — nothing to merge.")
+            else:
+                # Enrich with clean titles BEFORE adding the cinema suffix, so the
+                # OMDB lookups still work.
+                enrich_movies(kp_movies)
+                merged = 0
+                for kp_title, kp_data in kp_movies.items():
+                    new_title = f"{kp_title}{args.kinepolis_label}"
+                    # Guard against an unlikely clash with an existing Vue row.
+                    while new_title in movies:
+                        new_title += " "
+                    movies[new_title] = kp_data
+                    merged += 1
+                print(f"  Merged {merged} Kinepolis movie(s) into the Vue poll.")
+
+        # ── Optional string filter over the combined list ────────────────────
+        if args.filter:
+            before = len(movies)
+            movies = filter_movies(movies, args.filter)
+            print(f"\nFilter '{args.filter}': kept {len(movies)}/{before} movies.")
+            if not movies:
+                print("No movies matched the filter!")
+                sys.exit(1)
 
         total = sum(len(t) for d in movies.values() for t in d["times_by_date"].values())
         print(f"\n{len(movies)} movies, {total} showtimes:\n")

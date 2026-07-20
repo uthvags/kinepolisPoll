@@ -610,6 +610,15 @@
 
   .editor-row input { flex: 1; min-width: 100px; }
 
+  .editor-item {
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+  .editor-item .editor-row:last-child { margin-bottom: 0; }
+
   .editor-grid {
     overflow-x: auto;
   }
@@ -788,12 +797,13 @@
   </div>
 
   <div class="editor-section" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button onclick="editorExportJSON()">Download JSON</button>
-    <label style="padding:6px 14px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:0.85rem;margin:2px">
+    <button onclick="editorApplyToPage()" class="btn-secondary">Preview on Page</button>
+    <button onclick="editorDownloadPage()">Download updated index.html</button>
+    <button onclick="editorExportJSON()" class="btn-secondary">Download JSON</button>
+    <label style="padding:6px 14px;border-radius:6px;background:var(--card);color:#fff;font-weight:600;cursor:pointer;font-size:0.85rem;margin:2px">
       Import CSV
       <input type="file" accept=".csv" onchange="editorImportCSV(event)" style="display:none" />
     </label>
-    <button onclick="editorApplyToPage()" class="btn-secondary">Apply to Page</button>
   </div>
 </div>
 
@@ -846,6 +856,10 @@
 <div id="top-pick-section" style="display:none;margin-bottom:20px"></div>
 
 <div id="loading">Loading votes...</div>
+<div id="row-filter-bar" style="display:none;gap:8px;align-items:center;max-width:500px;margin:0 auto 14px">
+  <input type="text" id="row-filter" placeholder="Filter movies… e.g. imax" oninput="applyRowFilter()" style="flex:1" />
+  <span id="row-filter-count" style="font-size:0.8rem;color:var(--text-dim);white-space:nowrap"></span>
+</div>
 <div class="table-wrap" id="table-wrap" style="display:none"></div>
 
 <div id="charts-section" class="dashboard" style="display:none"></div>
@@ -865,7 +879,7 @@
 const STORAGE_PREFIX = "vue";
 const BAKED_SUPABASE_URL = "https://opadleobyehxumakwjvh.supabase.co";
 const BAKED_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYWRsZW9ieWVoeHVtYWt3anZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzE2MjAsImV4cCI6MjA4OTI0NzYyMH0.GsKMeIYORamBs56Q11cfuM0czWj7GmN7SEL2mCpkKA4";
-let MATRIX_DATA = {"columns": ["Mon 20 Jul", "Tue 21 Jul", "Wed 22 Jul", "Thu 23 Jul", "Fri 24 Jul", "Mon 27 Jul", "Tue 28 Jul", "Wed 29 Jul", "Thu 30 Jul", "Fri 31 Jul"], "items": [{"name": "Disclosure Day", "rating": "6.7", "category": "Action, Drama, Mystery", "image_url": "https://m.media-amazon.com/images/M/MV5BMTgwNDI1ZjctYWNmMS00MTJhLTg1ZWItMzI1Yjk5NjZkYWFkXkEyXkFqcGc@._V1_QL75_UX380_CR0,20,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt15047880/", "slots": {"Mon 20 Jul": ["21:10"]}}, {"name": "Evil Dead Burn", "rating": "?", "category": "?", "image_url": "https://www.vuecinemas.nl/-/media/vuecinemasnl/img/import/aaae48d5-df01-44f0-97b7-559c95c84960_evil-dead-burn_posters_evil-dead-burn_ps_1_jpg_sd-high_2026-war.jpg?rev=c9bd7bfcd0ad41e198e3c5135f41f288", "detail_url": "https://www.vuecinemas.nl/film/evil-dead-burn", "slots": {"Mon 20 Jul": ["22:00"], "Tue 21 Jul": ["22:00"], "Wed 22 Jul": ["22:00"]}}, {"name": "Good Luck, Have Fun, Don't Die", "rating": "7.0", "category": "Action, Adventure, Comedy", "image_url": "https://m.media-amazon.com/images/M/MV5BOTQ0NzYzM2QtOWYzMC00MGU5LWJmMTQtYTU1ODU0ZjUwYjk0XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt1341338/", "slots": {"Thu 23 Jul": ["19:50"]}}, {"name": "Hokum", "rating": "7.3", "category": "Horror, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BZjA1ZjFlZGItNTVjZC00NTFhLTg2YTEtODMzODRmNGFiNTdmXkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt35672862/", "slots": {"Thu 23 Jul": ["21:20"]}}, {"name": "Jackass: Best and Last", "rating": "6.7", "category": "Documentary, Comedy", "image_url": "https://m.media-amazon.com/images/M/MV5BYTRlYzQwYjItNDljNC00YmI2LWEwYmEtMjhhM2NiMGFhNTYyXkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt39316472/", "slots": {"Mon 20 Jul": ["19:20"], "Tue 21 Jul": ["19:20"], "Wed 22 Jul": ["19:20"]}}, {"name": "Legally Blonde", "rating": "6.5", "category": "Comedy, Romance", "image_url": "https://m.media-amazon.com/images/M/MV5BNTEyNjUwMTkxMV5BMl5BanBnXkFtZTcwNjk0NDk0NA@@._V1_SX300.jpg", "detail_url": "https://www.imdb.com/title/tt0250494/", "slots": {"Thu 30 Jul": ["20:30 Geen Ondertiteling Vue Classic"]}}, {"name": "Michael", "rating": "7.5", "category": "Biography, Drama, History", "image_url": "https://m.media-amazon.com/images/M/MV5BNzllNmRlN2EtMDQyOC00ODJjLTg4OWQtZDNmNGU3YzlkNjc1XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt11378946/", "slots": {"Mon 20 Jul": ["20:40"], "Tue 21 Jul": ["20:40"], "Wed 22 Jul": ["20:40"]}}, {"name": "Spider-Man: Brand New Day", "rating": "?", "category": "?", "image_url": "https://www.vuecinemas.nl/-/media/vuecinemasnl/img/import/c6bc0f8b-0d1a-409b-b738-0f6f76d8d567_spider-man-brand-new-day_posters_spider-man_-brand-new-day_ps_1.jpg?rev=788eda75f03f4421a6847e721b073bcd", "detail_url": "https://www.vuecinemas.nl/film/spider-man-brand-new-day", "slots": {"Wed 29 Jul": ["18:30 Voorpremière", "20:00 Voorpremière 3D Dolby Atmos"], "Thu 30 Jul": ["18:00", "20:00 3D Dolby Atmos", "21:30"], "Fri 31 Jul": ["18:00", "20:00 3D Dolby Atmos", "21:30"]}}, {"name": "Supergirl", "rating": "6.1", "category": "Action, Adventure, Drama", "image_url": "https://m.media-amazon.com/images/M/MV5BMmJkOTE0MWUtY2E5OS00NzEyLWI4NjEtYzQzYzFmMjk5ODE3XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt8814476/", "slots": {"Tue 21 Jul": ["18:00"], "Wed 22 Jul": ["18:00"]}}, {"name": "The Departed (20th Anniversary)", "rating": "8.5", "category": "Crime, Drama, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BMTI1MTY2OTIxNV5BMl5BanBnXkFtZTYwNjQ4NjY3._V1_QL75_UY562_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt0407887/", "slots": {"Thu 23 Jul": ["20:30 Vue Classic"], "Mon 27 Jul": ["20:30 Vue Classic"]}}, {"name": "The Devil Wears Prada 2", "rating": "6.6", "category": "Comedy, Drama", "image_url": "https://m.media-amazon.com/images/M/MV5BZmM3ZDU3ODItZmY5Yi00OTQ2LWE5OTctZTA5NDBhMWJkOGY3XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt33612209/", "slots": {"Tue 21 Jul": ["21:10"], "Wed 22 Jul": ["21:10"]}}, {"name": "The Furious", "rating": "7.7", "category": "Action, Crime, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BODUyZjg2YzctNGE3Yi00YjhhLTkyZTItZTAwZTNhNDA1ODQzXkEyXkFqcGc@._V1_QL75_UX380_CR0,4,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt33311069/", "slots": {"Mon 20 Jul": ["21:40"], "Tue 21 Jul": ["21:40"], "Wed 22 Jul": ["21:40"]}}, {"name": "The Invite", "rating": "7.8", "category": "Comedy, Drama, Romance", "image_url": "https://m.media-amazon.com/images/M/MV5BMjI0MzJjMjctNmQzZi00Y2U4LWEwZGItMmE3NDUzNzk1YzY3XkEyXkFqcGc@._V1_QL75_UX380_CR0,15,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt14173636/", "slots": {"Mon 20 Jul": ["19:00"], "Tue 21 Jul": ["19:00"], "Wed 22 Jul": ["19:00"]}}, {"name": "The Odyssey", "rating": "6.6", "category": "Adventure, Biography, Drama", "image_url": "https://m.media-amazon.com/images/M/MV5BZWVhNTk3OWYtYmVkZS00ODBkLWE3NTEtZjUzMmU3MzBlMWIyXkEyXkFqcGc@._V1_SX300.jpg", "detail_url": "https://www.imdb.com/title/tt1659619/", "slots": {"Mon 20 Jul": ["18:20", "19:30", "20:00", "21:00"], "Tue 21 Jul": ["18:20", "19:30", "20:00", "20:50"], "Wed 22 Jul": ["18:20", "19:30", "20:00", "20:50"], "Thu 23 Jul": ["18:30", "20:00"], "Fri 24 Jul": ["19:00", "20:30"], "Mon 27 Jul": ["18:30", "20:00"], "Tue 28 Jul": ["18:30", "20:00"]}}], "row_label": "Movie"};
+let MATRIX_DATA = {"columns": ["Mon 20 Jul", "Tue 21 Jul", "Wed 22 Jul", "Thu 23 Jul", "Fri 24 Jul", "Mon 27 Jul", "Tue 28 Jul", "Wed 29 Jul", "Thu 30 Jul", "Fri 31 Jul"], "items": [{"name": "Evil Dead Burn", "rating": "?", "category": "?", "image_url": "https://www.vuecinemas.nl/-/media/vuecinemasnl/img/import/aaae48d5-df01-44f0-97b7-559c95c84960_evil-dead-burn_posters_evil-dead-burn_ps_1_jpg_sd-high_2026-war.jpg?rev=c9bd7bfcd0ad41e198e3c5135f41f288", "detail_url": "https://www.vuecinemas.nl/film/evil-dead-burn", "slots": {"Mon 20 Jul": ["22:00"], "Tue 21 Jul": ["22:00"], "Wed 22 Jul": ["22:00"]}}, {"name": "Good Luck, Have Fun, Don't Die", "rating": "7.0", "category": "Action, Adventure, Comedy", "image_url": "https://m.media-amazon.com/images/M/MV5BOTQ0NzYzM2QtOWYzMC00MGU5LWJmMTQtYTU1ODU0ZjUwYjk0XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt1341338/", "slots": {"Thu 23 Jul": ["19:50"]}}, {"name": "Hokum", "rating": "7.3", "category": "Horror, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BZjA1ZjFlZGItNTVjZC00NTFhLTg2YTEtODMzODRmNGFiNTdmXkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt35672862/", "slots": {"Thu 23 Jul": ["21:20"]}}, {"name": "Spider-Man: Brand New Day", "rating": "?", "category": "?", "image_url": "https://www.vuecinemas.nl/-/media/vuecinemasnl/img/import/c6bc0f8b-0d1a-409b-b738-0f6f76d8d567_spider-man-brand-new-day_posters_spider-man_-brand-new-day_ps_1.jpg?rev=788eda75f03f4421a6847e721b073bcd", "detail_url": "https://www.vuecinemas.nl/film/spider-man-brand-new-day", "slots": {"Wed 29 Jul": ["18:30 Voorpremière", "20:00 Voorpremière 3D Dolby Atmos"], "Thu 30 Jul": ["18:00", "20:00 3D Dolby Atmos", "21:30"], "Fri 31 Jul": ["18:00", "20:00 3D Dolby Atmos", "21:30"]}}, {"name": "The Departed (20th Anniversary)", "rating": "8.5", "category": "Crime, Drama, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BMTI1MTY2OTIxNV5BMl5BanBnXkFtZTYwNjQ4NjY3._V1_QL75_UY562_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt0407887/", "slots": {"Thu 23 Jul": ["20:30 Vue Classic"], "Mon 27 Jul": ["20:30 Vue Classic"]}}, {"name": "The Furious", "rating": "7.7", "category": "Action, Crime, Thriller", "image_url": "https://m.media-amazon.com/images/M/MV5BODUyZjg2YzctNGE3Yi00YjhhLTkyZTItZTAwZTNhNDA1ODQzXkEyXkFqcGc@._V1_QL75_UX380_CR0,4,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt33311069/", "slots": {"Mon 20 Jul": ["21:40"], "Tue 21 Jul": ["21:40"], "Wed 22 Jul": ["21:40"]}}, {"name": "The Invite", "rating": "7.8", "category": "Comedy, Drama, Romance", "image_url": "https://m.media-amazon.com/images/M/MV5BMjI0MzJjMjctNmQzZi00Y2U4LWEwZGItMmE3NDUzNzk1YzY3XkEyXkFqcGc@._V1_QL75_UX380_CR0,15,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt14173636/", "slots": {"Mon 20 Jul": ["19:00"], "Tue 21 Jul": ["19:00"], "Wed 22 Jul": ["19:00"]}}, {"name": "The Odyssey", "rating": "8.3", "category": "Adventure, Drama, Fantasy", "image_url": "https://m.media-amazon.com/images/M/MV5BNTcyNmJlZmQtNDUwYy00NDBjLTg1NGQtYTY2Y2UxMWM3NmI1XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg", "detail_url": "https://www.imdb.com/title/tt33764258/", "slots": {"Mon 20 Jul": ["18:20", "19:30", "20:00", "21:00"], "Tue 21 Jul": ["18:20", "19:30", "20:00", "20:50"], "Wed 22 Jul": ["18:20", "19:30", "20:00", "20:50"], "Thu 23 Jul": ["18:30", "20:00"], "Fri 24 Jul": ["19:00", "20:30"], "Mon 27 Jul": ["18:30", "20:00"], "Tue 28 Jul": ["18:30", "20:00"]}}], "row_label": "Movie"};
 
 // Resolve Supabase config: baked-in > localStorage > prompt setup
 function getSupabaseUrl() {
@@ -1193,7 +1207,11 @@ function renderTable() {
   html += '</tr></thead><tbody>';
 
   for (const item of items) {
-    html += '<tr>';
+    // Index name + category + every showtime label so the in-page filter can
+    // match formats like "imax" that live on the showtimes, not the title.
+    const slotText = Object.values(item.slots || {}).reduce((a, s) => a.concat(s), []).join(' ');
+    const searchText = (item.name + ' ' + (item.category || '') + ' ' + slotText).toLowerCase();
+    html += '<tr data-search="' + escAttr(searchText) + '">';
 
     const rating = item.rating && item.rating !== '?' ? ' &#11088; ' + item.rating + '/10' : '';
     const category = item.category && item.category !== '?' ? item.category : '';
@@ -1261,8 +1279,27 @@ function renderTable() {
 
   html += '</tbody></table>';
   document.getElementById('table-wrap').innerHTML = html;
+  const filterBar = document.getElementById('row-filter-bar');
+  if (filterBar) filterBar.style.display = 'flex';
+  applyRowFilter();
   renderDashboard();
   renderSummary();
+}
+
+function applyRowFilter() {
+  const inp = document.getElementById('row-filter');
+  if (!inp) return;
+  const terms = inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const rows = document.querySelectorAll('#table-wrap tbody tr');
+  let shown = 0;
+  for (const row of rows) {
+    const hay = row.getAttribute('data-search') || '';
+    const match = terms.every(t => hay.indexOf(t) !== -1);
+    row.style.display = match ? '' : 'none';
+    if (match) shown++;
+  }
+  const countEl = document.getElementById('row-filter-count');
+  if (countEl) countEl.textContent = terms.length ? (shown + ' of ' + rows.length) : '';
 }
 
 function renderSummary() {
@@ -1526,11 +1563,18 @@ function editorRenderItems() {
   let html = '';
   for (let i = 0; i < editorData.items.length; i++) {
     const item = editorData.items[i];
-    html += '<div class="editor-row">'
+    html += '<div class="editor-item">'
+      + '<div class="editor-row">'
       + '<input type="text" value="' + escAttr(item.name) + '" placeholder="Name" onchange="editorData.items[' + i + '].name=this.value;editorRenderSlotsGrid()" style="flex:2" />'
       + '<input type="text" value="' + escAttr(item.rating || '') + '" placeholder="Rating" onchange="editorData.items[' + i + '].rating=this.value" style="flex:0.5;min-width:60px" />'
       + '<input type="text" value="' + escAttr(item.category || '') + '" placeholder="Category" onchange="editorData.items[' + i + '].category=this.value" style="flex:1" />'
       + '<button class="btn-danger" onclick="editorRemoveItem(' + i + ')">X</button>'
+      + '</div>'
+      + '<div class="editor-row">'
+      + '<input type="text" value="' + escAttr(item.image_url || '') + '" placeholder="Poster / image URL" onchange="editorData.items[' + i + '].image_url=this.value;editorRenderItems()" style="flex:1" />'
+      + '<input type="text" value="' + escAttr(item.detail_url || '') + '" placeholder="IMDB / detail link" onchange="editorData.items[' + i + '].detail_url=this.value" style="flex:1" />'
+      + (item.image_url ? '<img src="' + escAttr(item.image_url) + '" alt="" style="height:44px;width:auto;border-radius:4px;object-fit:cover" onerror="this.style.display=\'none\'" />' : '')
+      + '</div>'
       + '</div>';
   }
   container.innerHTML = html;
@@ -1617,6 +1661,48 @@ function editorExportJSON() {
   a.download = 'poll_data.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// Bake the current edits into a fresh copy of this page so poster/link fixes
+// persist. Fetches this page's own source, swaps the embedded MATRIX_DATA and
+// title, and downloads index.html — commit that file to publish the changes.
+async function editorDownloadPage() {
+  try {
+    const resp = await fetch(window.location.pathname + window.location.search.replace(/[?&]admin=true/, ''));
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    let src = await resp.text();
+
+    const title = document.getElementById('editor-title').value.trim() || 'Poll';
+    const newData = JSON.stringify({
+      columns: editorData.columns,
+      items: editorData.items.map(item => ({
+        name: item.name,
+        rating: item.rating || '',
+        category: item.category || '',
+        image_url: item.image_url || '',
+        detail_url: item.detail_url || '',
+        slots: item.slots || {},
+      })),
+      row_label: (MATRIX_DATA && MATRIX_DATA.row_label) || 'Item',
+    });
+
+    // Replacement functions (not strings) so '$' inside data isn't special.
+    let n = 0;
+    src = src.replace(/let MATRIX_DATA = .*;/, () => { n++; return 'let MATRIX_DATA = ' + newData + ';'; });
+    if (n === 0) throw new Error('could not find MATRIX_DATA in page source');
+    src = src.replace(/<title>[\s\S]*?<\/title>/, () => '<title>' + title.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</title>');
+
+    const blob = new Blob([src], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Could not build the page: ' + e.message +
+      '\nTip: this needs the page served over http(s) (e.g. GitHub Pages), not opened as a local file.');
+  }
 }
 
 function editorImportCSV(event) {
@@ -1758,13 +1844,26 @@ async function init() {
   }
 }
 
-// Admin mode toggle via ?admin=true
-(function() {
+// Admin mode toggle via ?admin=true (password-gated when a hash is baked in).
+const ADMIN_PASS_HASH = "";
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+(async function() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('admin') === 'true') {
-    document.getElementById('admin-editor').style.display = 'block';
-    editorInit();
+  if (params.get('admin') !== 'true') return;
+  if (ADMIN_PASS_HASH) {
+    const entered = prompt('Admin password:');
+    if (entered === null) return;               // cancelled
+    let ok = false;
+    try { ok = (await sha256Hex(entered)) === ADMIN_PASS_HASH; } catch (e) { ok = false; }
+    if (!ok) { alert('Wrong password.'); return; }
   }
+  document.getElementById('admin-editor').style.display = 'block';
+  editorInit();
 })();
 
 init();
