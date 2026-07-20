@@ -577,6 +577,50 @@ def generate_voting_page(
     background: rgba(255,255,255,0.03);
   }
 
+  .admin-edit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 8px 0;
+    font-size: 0.85rem;
+  }
+  .admin-edit-row label {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    color: var(--text-dim);
+  }
+  .admin-edit-row select,
+  .admin-edit-row input {
+    padding: 3px 6px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .admin-edit-row button {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    background: var(--card);
+    color: var(--text);
+  }
+  .admin-edit-row button:hover { filter: brightness(1.25); }
+  .admin-edit-row button.btn-danger { background: var(--accent); }
+  .admin-del-btn {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .admin-del-btn:hover { background: rgba(233,69,96,0.18); }
+
   /* Dashboard */
   .dashboard {
     display: grid;
@@ -1612,6 +1656,9 @@ function renderSummary() {
   document.getElementById('summary-list').innerHTML = html;
 }
 
+let adminVoterNames = [];
+let isAdmin = false;  // set true only after the ?admin=true password check passes
+
 function renderAdmin() {
   const groups = {};
   for (const v of allVotes) {
@@ -1620,13 +1667,15 @@ function renderAdmin() {
   }
 
   const sortedNames = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  adminVoterNames = sortedNames;
   if (sortedNames.length === 0) {
     document.getElementById('admin-table').innerHTML = '<p style="color:var(--text-dim)">No votes yet.</p>';
     return;
   }
 
   let html = '';
-  for (const name of sortedNames) {
+  for (let gi = 0; gi < sortedNames.length; gi++) {
+    const name = sortedNames[gi];
     const votes = groups[name];
     const sample = votes[0];
     const pvxLabel = sample.isPvx === 'Yes' ? 'PVX' : 'non-PVX';
@@ -1637,8 +1686,23 @@ function renderAdmin() {
       + ' (' + votes.length + ' vote' + (votes.length !== 1 ? 's' : '') + ')'
       + '</summary>';
 
+    // Per-voter attribute editor (applies to all of this voter's rows at once).
+    // Only admins get the mutating controls; everyone else sees a read-only list.
+    if (isAdmin) {
+      html += '<div class="admin-edit-row">'
+        + '<label>PVX <select id="admin-pvx-' + gi + '">'
+        +   '<option value="Yes"' + (sample.isPvx === 'Yes' ? ' selected' : '') + '>Yes</option>'
+        +   '<option value="No"' + (sample.isPvx !== 'Yes' ? ' selected' : '') + '>No</option>'
+        + '</select></label>'
+        + '<label>Partners/kids <input type="number" min="0" id="admin-partners-' + gi + '" value="' + (sample.Partners || 0) + '"></label>'
+        + '<label>Others <input type="number" min="0" id="admin-others-' + gi + '" value="' + (sample.Others || 0) + '"></label>'
+        + '<button onclick="adminUpdateVoter(' + gi + ')">Apply</button>'
+        + '<button class="btn-danger" onclick="adminDeleteVoter(' + gi + ')">Delete all votes</button>'
+        + '</div>';
+    }
+
     html += '<table class="admin-table"><thead><tr>'
-      + '<th>Item</th><th>Column</th><th>Slot</th>'
+      + '<th>Item</th><th>Column</th><th>Slot</th>' + (isAdmin ? '<th></th>' : '')
       + '</tr></thead><tbody>';
 
     for (const v of votes) {
@@ -1646,6 +1710,10 @@ function renderAdmin() {
         + '<td>' + escHtml(v.MovieTitle) + '</td>'
         + '<td>' + escHtml(v.ShowDate) + '</td>'
         + '<td>' + escHtml(v.ShowTime) + '</td>'
+        + (isAdmin
+            ? '<td style="text-align:center"><button class="admin-del-btn" title="Delete this vote" '
+              + 'onclick="adminDeleteVote(\'' + v.id + '\')">&#10005;</button></td>'
+            : '')
         + '</tr>';
     }
 
@@ -1653,6 +1721,68 @@ function renderAdmin() {
   }
 
   document.getElementById('admin-table').innerHTML = html;
+}
+
+// Delete a single vote by row id.
+async function adminDeleteVote(id) {
+  if (!confirm('Delete this vote?')) return;
+  try {
+    await deleteVote(id);
+    allVotes = allVotes.filter(v => String(v.id) !== String(id));
+    renderTable();
+    renderAdmin();
+  } catch (err) {
+    alert('Could not delete vote: ' + err.message);
+  }
+}
+
+// Delete every vote cast by one voter (scoped to this poll).
+async function adminDeleteVoter(gi) {
+  const name = adminVoterNames[gi];
+  if (name === undefined) return;
+  const count = allVotes.filter(v => v.VoterName === name).length;
+  if (!confirm('Delete all ' + count + ' vote(s) by "' + name + '"?')) return;
+  try {
+    const resp = await fetch(
+      SUPABASE_URL + '/rest/v1/votes?PollId=eq.' + encodeURIComponent(STORAGE_PREFIX)
+        + '&VoterName=eq.' + encodeURIComponent(name),
+      { method: 'DELETE', headers: getHeaders() }
+    );
+    if (!resp.ok) throw new Error('status ' + resp.status);
+    allVotes = allVotes.filter(v => v.VoterName !== name);
+    renderTable();
+    renderAdmin();
+  } catch (err) {
+    alert('Could not delete votes: ' + err.message);
+  }
+}
+
+// Update a voter's PVX / party-size on all of their rows at once.
+async function adminUpdateVoter(gi) {
+  const name = adminVoterNames[gi];
+  if (name === undefined) return;
+  const pvx = document.getElementById('admin-pvx-' + gi).value;
+  const partners = parseInt(document.getElementById('admin-partners-' + gi).value, 10) || 0;
+  const others = parseInt(document.getElementById('admin-others-' + gi).value, 10) || 0;
+  try {
+    const resp = await fetch(
+      SUPABASE_URL + '/rest/v1/votes?PollId=eq.' + encodeURIComponent(STORAGE_PREFIX)
+        + '&VoterName=eq.' + encodeURIComponent(name),
+      {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ isPvx: pvx, Partners: partners, Others: others }),
+      }
+    );
+    if (!resp.ok) throw new Error('status ' + resp.status);
+    for (const v of allVotes) {
+      if (v.VoterName === name) { v.isPvx = pvx; v.Partners = partners; v.Others = others; }
+    }
+    renderTable();
+    renderAdmin();
+  } catch (err) {
+    alert('Could not update voter: ' + err.message);
+  }
 }
 
 function exportShowtimeToExcel(key) {
@@ -2122,8 +2252,11 @@ async function sha256Hex(str) {
     try { ok = (await sha256Hex(entered)) === ADMIN_PASS_HASH; } catch (e) { ok = false; }
     if (!ok) { alert('Wrong password.'); return; }
   }
+  isAdmin = true;
   document.getElementById('admin-editor').style.display = 'block';
   editorInit();
+  // If the votes panel is already open, re-render it so edit controls appear.
+  if (document.getElementById('admin-panel').style.display !== 'none') renderAdmin();
 })();
 
 init();
