@@ -10,13 +10,46 @@ Requirements:
 """
 
 import bisect
+import calendar
 import os
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import requests
 from playwright.sync_api import BrowserContext
+
+# Kinepolis serves showtimes in UTC; the poll must show local Enschede time.
+# Prefer the IANA tz database (correct DST + historical rules); fall back to a
+# hand-rolled EU rule when it's unavailable (e.g. Windows without the `tzdata`
+# package installed).
+try:
+    from zoneinfo import ZoneInfo
+    _AMSTERDAM_TZ = ZoneInfo("Europe/Amsterdam")
+except Exception:
+    _AMSTERDAM_TZ = None
+
+
+def _last_sunday(year: int, month: int) -> int:
+    """Day-of-month of the last Sunday (Mon-first weeks put Sunday at index 6)."""
+    return max(week[6] for week in calendar.monthcalendar(year, month))
+
+
+def _eu_summer_time(dt_utc: datetime) -> bool:
+    """True if a UTC datetime falls in EU summer time (CEST, last Sun Mar–Oct)."""
+    y = dt_utc.year
+    start = datetime(y, 3, _last_sunday(y, 3), 1, tzinfo=timezone.utc)
+    end = datetime(y, 10, _last_sunday(y, 10), 1, tzinfo=timezone.utc)
+    return start <= dt_utc < end
+
+
+def _to_amsterdam(dt_aware: datetime) -> datetime:
+    """Convert an aware datetime to Europe/Amsterdam local time (DST-aware)."""
+    if _AMSTERDAM_TZ is not None:
+        return dt_aware.astimezone(_AMSTERDAM_TZ)
+    dt_utc = dt_aware.astimezone(timezone.utc)
+    offset = 2 if _eu_summer_time(dt_utc) else 1
+    return dt_aware.astimezone(timezone(timedelta(hours=offset)))
 
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
@@ -195,9 +228,15 @@ def scrape_kinepolis(
             continue
 
         try:
-            st_naive = datetime.fromisoformat(st_match.group(1).replace("+00:00", ""))
+            dt = datetime.fromisoformat(st_match.group(1).replace("Z", "+00:00"))
         except Exception:
             continue
+        # Kinepolis showtimes are UTC. A bare value (no offset) is assumed UTC too,
+        # matching the old behaviour. Convert to local Enschede time so 20:00 CEST
+        # shows as 20:00, not 18:00 — and so late-night shows land on the right day.
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        st_naive = _to_amsterdam(dt).replace(tzinfo=None)
 
         # Date range filter
         if st_naive.date() < start.date() or st_naive.date() >= end_date.date():

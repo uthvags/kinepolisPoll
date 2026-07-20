@@ -27,6 +27,10 @@ from datetime import datetime, timedelta
 
 from playwright.sync_api import BrowserContext
 
+# Reuse the Kinepolis pipeline's DST-aware local-time conversion so both
+# cinemas display Enschede wall-clock times consistently.
+from kinepolis_scraper import _to_amsterdam
+
 VUE_BASE = "https://www.vuecinemas.nl"
 VUE_CINEMA_ID = 1025  # Enschede
 VUE_LISTING_URL = f"{VUE_BASE}/cinema/enschede/nu-in-de-bioscoop"
@@ -293,6 +297,11 @@ def scrape_vue(
                         st = datetime.fromisoformat(start)
                     except Exception:
                         continue
+                    # If the API gives an offset-aware time, normalise it to local
+                    # Enschede time. A naive value is left as-is (already local),
+                    # preserving the existing, working behaviour.
+                    if st.tzinfo is not None:
+                        st = _to_amsterdam(st).replace(tzinfo=None)
                     if st.date() != d:
                         continue
                     if st.hour < filter_hour or (
