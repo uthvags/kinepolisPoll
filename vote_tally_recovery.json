@@ -1,0 +1,39 @@
+{
+  "_note": "Per-slot vote COUNTS captured from Supabase shortly before an accidental reset. PollId=vue, 63 votes total. Voter names and party sizes (isPvx/Partners/Others) were NOT captured and cannot be reconstructed from this data.",
+  "poll_id": "vue",
+  "total_votes": 63,
+  "tally": [
+    {"MovieTitle": "Good Luck, Have Fun, Don't Die", "ShowDate": "Thu 23 Jul", "ShowTime": "19:50", "count": 1},
+
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Wed 29 Jul", "ShowTime": "20:00 Voorpremière 3D Dolby Atmos", "count": 1},
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Thu 30 Jul", "ShowTime": "18:00", "count": 2},
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Thu 30 Jul", "ShowTime": "20:00 3D Dolby Atmos", "count": 2},
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Thu 30 Jul", "ShowTime": "21:30", "count": 2},
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Fri 31 Jul", "ShowTime": "18:00", "count": 2},
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Fri 31 Jul", "ShowTime": "20:00 3D Dolby Atmos", "count": 2},
+    {"MovieTitle": "Spider-Man: Brand New Day", "ShowDate": "Fri 31 Jul", "ShowTime": "21:30", "count": 2},
+
+    {"MovieTitle": "The Odyssey", "ShowDate": "Tue 21 Jul", "ShowTime": "20:50", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Wed 22 Jul", "ShowTime": "18:20", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Wed 22 Jul", "ShowTime": "19:30", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Wed 22 Jul", "ShowTime": "20:00", "count": 2},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Wed 22 Jul", "ShowTime": "20:50", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Thu 23 Jul", "ShowTime": "18:30", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Thu 23 Jul", "ShowTime": "20:00", "count": 2},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Fri 24 Jul", "ShowTime": "19:00", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Fri 24 Jul", "ShowTime": "20:30", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Mon 27 Jul", "ShowTime": "18:30", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Mon 27 Jul", "ShowTime": "20:00", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Tue 28 Jul", "ShowTime": "18:30", "count": 1},
+    {"MovieTitle": "The Odyssey", "ShowDate": "Tue 28 Jul", "ShowTime": "20:00", "count": 1},
+
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Mon 20 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 2},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Tue 21 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 4},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Wed 22 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 7},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Thu 23 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 8},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Fri 24 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 4},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Mon 27 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 3},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Tue 28 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 3},
+    {"MovieTitle": "The Odyssey (Kinepolis)", "ShowDate": "Wed 29 Jul", "ShowTime": "18:00 Engelse versie IMAX", "count": 3}
+  ]
+}
